@@ -1,0 +1,15 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "baseUrl": ".",                          // Set baseUrl untuk proyek
+    "paths": {
+      "@/*": ["src/*"]                       // Alias untuk mempermudah import dari src/
+    }
+  },
+  "include": [
+    "src/**/*",                               // Menyertakan semua file dalam src/
+    ".expo/types/**/*.ts",                    // Menyertakan tipe Expo
+    "expo-env.d.ts"                           // Jika ada file expo-env.d.ts
+  ]
+}
