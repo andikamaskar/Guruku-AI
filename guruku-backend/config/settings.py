@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',
     'api.users',
     'api.chatbot',
     'api.classes',
@@ -91,6 +92,13 @@ DATABASES = {
         },
     }
 }
+
+AUTH_USER_MODEL = 'users.User'
+
+AUTHENTICATION_BACKENDS = [
+    'api.users.auth_backend.EmailBackend', 
+    'django.contrib.auth.backends.ModelBackend',  
+]
 
 
 # Password validation
