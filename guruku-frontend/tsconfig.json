@@ -4,7 +4,8 @@
     "strict": true,
     "baseUrl": ".",                          // Set baseUrl untuk proyek
     "paths": {
-      "@/*": ["src/*"]                       // Alias untuk mempermudah import dari src/
+      "@/*": ["./*"]                       // Alias untuk mempermudah import dari src/
+      //"@/*": ["src/*"]                       // Alias untuk mempermudah import dari src/
     }
   },
   "include": [
