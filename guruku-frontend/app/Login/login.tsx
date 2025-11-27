@@ -19,24 +19,33 @@ export default function App() {
 
     try {
       const res = await axios.post(`${API_BASE_URL}/users/login/`, {
-        email: email,
-        password: password
+        email,
+        password
       });
 
       console.log("Login Response:", res.data);
 
+      const role = res.data.user.role;
+
       Alert.alert("Success", "Login berhasil!");
 
-      // Simpan token (kalau kamu mau pakai async-storage)
-      // await AsyncStorage.setItem("access_token", res.data.tokens.access);
+      // Arahkan berdasar role
+      if (role === "student") {
+        router.replace("/(tabs)/students");
+      } 
+      else if (role === "teacher") {
+        router.replace("/(tabs)/teachers");
+      } 
+      else {
+        Alert.alert("Error", "Role tidak dikenali!");
+      }
 
-      // Arahkan ke halaman utama
-      router.replace("(tabs)");
     } catch (error: any) {
       console.log(error.response?.data);
       Alert.alert("Login gagal", error.response?.data?.error || "Terjadi kesalahan");
     }
   };
+
 
   return (
     <View style={styles.container}>
