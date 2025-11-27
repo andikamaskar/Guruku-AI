@@ -1,6 +1,63 @@
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert, Platform, Pressable } from 'react-native';
+import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import API_BASE_URL from "@/config/api";
+import axios from 'axios';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
 
 export default function App() {
+  const router = useRouter();
+
+  const [fullName, setFullName] = useState("");
+  const [birthDate, setBirthDate] = useState(""); // format: YYYY-MM-DD
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [showPicker, setShowPicker] = useState(false);
+  const [date, setDate] = useState(new Date());
+
+  // Format tanggal ke YYYY-MM-DD
+  const formatDate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const onChangeDate = (event: any, selectedDate?: Date) => {
+    setShowPicker(false);
+    if (selectedDate) {
+      setDate(selectedDate);
+      setBirthDate(formatDate(selectedDate));
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!fullName || !birthDate || !email || !password) {
+      Alert.alert("Error", "Semua field wajib diisi");
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/users/register/`, {
+        full_name: fullName,
+        birth_date: birthDate,
+        email: email,
+        password: password,
+        role: "student"
+      });
+
+      Alert.alert("Sukses", "Registrasi berhasil!", [
+        { text: "OK", onPress: () => router.push("Login/login") }
+      ]);
+
+    } catch (error: any) {
+      console.log(error.response?.data);
+      Alert.alert("Gagal", "Registrasi gagal. Periksa data kembali.");
+    }
+  };
+
   return (
     <View style={styles.container}>
 
@@ -10,7 +67,7 @@ export default function App() {
       {/* Main Header */}
       <View style={styles.MainHeader}>
         <Text style={styles.HeaderContent}>Sudah Mempunyai Akun?</Text>
-        <TouchableOpacity style={styles.TextLogButton}>
+        <TouchableOpacity style={styles.TextLogButton} onPress={() => router.push("Login/login")} >
           <Text style={styles.TextLogButton}>Login</Text>
         </TouchableOpacity>
       </View>
@@ -20,27 +77,57 @@ export default function App() {
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Masukan Nama Lengkap</Text>
-            <TextInput style={styles.input} placeholderTextColor="#aaa" />
+            <TextInput
+              style={styles.input}
+              placeholderTextColor="#aaa"
+              value={fullName}
+              onChangeText={setFullName}
+            />
           </View>
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Tanggal Lahir</Text>
-            <TextInput style={styles.input} placeholderTextColor="#aaa" />
+
+            <Pressable onPress={() => setShowPicker(true)}>
+              <Text style={[styles.input, { paddingVertical: 8 }]}>
+                {birthDate || "Pilih tanggal lahir"}
+              </Text>
+            </Pressable>
+
+            {showPicker && (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={onChangeDate}
+                maximumDate={new Date()} // tidak bisa pilih tanggal masa depan
+              />
+            )}
           </View>
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Email</Text>
-            <TextInput style={styles.input} placeholderTextColor="#aaa" />
+            <TextInput
+              style={styles.input}
+              placeholderTextColor="#aaa"
+              value={email}
+              onChangeText={setEmail}
+            />
           </View>
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Password</Text>
-            <TextInput style={styles.input} secureTextEntry placeholderTextColor="#aaa" />
-            <Text style={styles.forgetpassword} />
+            <TextInput
+              style={styles.input}
+              secureTextEntry
+              placeholderTextColor="#aaa"
+              value={password}
+              onChangeText={setPassword}
+            />
           </View>
 
           <View style={styles.InputBox}>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={handleRegister}>
               <Image
                 style={{ width: 30, height: 30 }}
                 source={require('../../assets/images/arrow-right.png')}

@@ -1,8 +1,10 @@
 import { StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
 import React, { useState } from 'react';
+import { useRouter } from "expo-router";
 
 export default function App() {
-  
+  const router = useRouter();
+
   const pages = [
     {
       title: 'What is Lorem Ipsum?',
@@ -81,14 +83,23 @@ export default function App() {
 
           {/* BUTTONS */}
           <View style={styles.contButton}>
+            {/* Prev */}
             <TouchableOpacity onPress={handlePrev}>
               <Text style={styles.PrevButton}>Prev</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleNext}>
-              <Text style={styles.NextButton}>Next</Text>
-            </TouchableOpacity>
+            {/* Next atau Login */}
+            {pageIndex < pages.length - 1 ? (
+              <TouchableOpacity onPress={handleNext}>
+                <Text style={styles.NextButton}>Next</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={() => router.push("Login/login")}>
+                <Text style={styles.NextButton}>Login</Text>
+              </TouchableOpacity>
+            )}
           </View>
+
 
         </View>
       </View>

@@ -1,6 +1,43 @@
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import axios from 'axios';
+import API_BASE_URL from '../../config/api';
+
 
 export default function App() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Email dan password harus diisi.");
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/users/login/`, {
+        email: email,
+        password: password
+      });
+
+      console.log("Login Response:", res.data);
+
+      Alert.alert("Success", "Login berhasil!");
+
+      // Simpan token (kalau kamu mau pakai async-storage)
+      // await AsyncStorage.setItem("access_token", res.data.tokens.access);
+
+      // Arahkan ke halaman utama
+      router.replace("(tabs)");
+    } catch (error: any) {
+      console.log(error.response?.data);
+      Alert.alert("Login gagal", error.response?.data?.error || "Terjadi kesalahan");
+    }
+  };
+
   return (
     <View style={styles.container}>
 
@@ -22,17 +59,31 @@ export default function App() {
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Email</Text>
-            <TextInput style={styles.input} placeholderTextColor="#aaa" />
+            <TextInput
+              style={styles.input}
+              placeholder="Masukkan email"
+              placeholderTextColor="#aaa"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+            />
           </View>
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Password</Text>
-            <TextInput style={styles.input} secureTextEntry placeholderTextColor="#aaa" />
+            <TextInput
+              style={styles.input}
+              placeholder="Masukkan password"
+              placeholderTextColor="#aaa"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+            />
             <Text style={styles.forgetpassword} />
           </View>
 
           <View style={styles.InputBox}>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={handleLogin}>
               <Image
                 style={{ width: 30, height: 30 }}
                 source={require('../../assets/images/arrow-right.png')}
@@ -60,8 +111,8 @@ export default function App() {
       {/* Main Footer */}
       <View style={styles.MainFooter}>
         <View>
-          <Text style={styles.FooterContent}>Sudah Mempunyai Akun?</Text>
-          <TouchableOpacity style={styles.regbutton}>
+          <Text style={styles.FooterContent}>Pengguna Baru?</Text>
+          <TouchableOpacity style={styles.regbutton} onPress={() => router.push("Register/register")}>
             <Text style={styles.TextRegButton}>Register</Text>
           </TouchableOpacity>
         </View>

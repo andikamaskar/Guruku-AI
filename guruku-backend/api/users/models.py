@@ -27,6 +27,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=150)
+    birth_date = models.DateField(null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)

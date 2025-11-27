@@ -18,7 +18,8 @@ class RegisterView(APIView):
                 "user": {
                     "email": user.email,
                     "full_name": user.full_name,
-                    "role": user.role
+                    "role": user.role,
+                    "birth_date": user.birth_date
                 }
 
             }, status=status.HTTP_201_CREATED)
