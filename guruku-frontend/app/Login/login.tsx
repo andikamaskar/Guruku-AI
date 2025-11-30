@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 
 export default function App() {
@@ -39,7 +40,7 @@ export default function App() {
       else {
         Alert.alert("Error", "Role tidak dikenali!");
       }
-
+      await AsyncStorage.setItem("role", res.data.user.role);
     } catch (error: any) {
       console.log(error.response?.data);
       Alert.alert("Login gagal", error.response?.data?.error || "Terjadi kesalahan");
