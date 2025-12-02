@@ -14,6 +14,8 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [role, setRole] = useState("student");
+
   const [showPicker, setShowPicker] = useState(false);
   const [date, setDate] = useState(new Date());
 
@@ -33,9 +35,33 @@ export default function App() {
     }
   };
 
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const isValidPassword = (password: string) => {
+    // Min 8 chars, 1 uppercase, 1 lowercase, 1 number
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+    return passwordRegex.test(password);
+  };
+
   const handleRegister = async () => {
     if (!fullName || !birthDate || !email || !password) {
       Alert.alert("Error", "Semua field wajib diisi");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      Alert.alert("Error", "Format email tidak valid");
+      return;
+    }
+
+    if (!isValidPassword(password)) {
+      Alert.alert(
+        "Error",
+        "Password harus minimal 8 karakter, mengandung huruf besar, huruf kecil, dan angka."
+      );
       return;
     }
 
@@ -45,7 +71,7 @@ export default function App() {
         birth_date: birthDate,
         email: email,
         password: password,
-        role: "student"
+        role: role
       });
 
       Alert.alert("Sukses", "Registrasi berhasil!", [
@@ -74,6 +100,22 @@ export default function App() {
 
       <View style={styles.contentBox}>
         <View style={styles.FormBox}>
+
+          {/* Role Selection */}
+          <View style={styles.roleContainer}>
+            <TouchableOpacity
+              style={[styles.roleButton, role === "student" && styles.roleButtonActive]}
+              onPress={() => setRole("student")}
+            >
+              <Text style={[styles.roleText, role === "student" && styles.roleTextActive]}>Student</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.roleButton, role === "teacher" && styles.roleButtonActive]}
+              onPress={() => setRole("teacher")}
+            >
+              <Text style={[styles.roleText, role === "teacher" && styles.roleTextActive]}>Teacher</Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Masukan Nama Lengkap</Text>
@@ -112,6 +154,8 @@ export default function App() {
               placeholderTextColor="#aaa"
               value={email}
               onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
             />
           </View>
 
@@ -324,5 +368,31 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     fontSize: 12,
+  },
+
+  roleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  roleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: '#0B409C',
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+    backgroundColor: 'white',
+  },
+  roleButtonActive: {
+    backgroundColor: '#0B409C',
+  },
+  roleText: {
+    color: '#0B409C',
+    fontWeight: 'bold',
+  },
+  roleTextActive: {
+    color: 'white',
   },
 });
