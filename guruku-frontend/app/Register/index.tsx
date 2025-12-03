@@ -93,7 +93,7 @@ export default function App() {
       {/* Main Header */}
       <View style={styles.MainHeader}>
         <Text style={styles.HeaderContent}>Sudah Mempunyai Akun?</Text>
-        <TouchableOpacity onPress={() => router.push("Login/login")} >
+        <TouchableOpacity onPress={() => router.push("Login")} >
           <Text style={styles.TextLogButton}>Login</Text>
         </TouchableOpacity>
       </View>

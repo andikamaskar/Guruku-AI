@@ -106,6 +106,12 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
+          <View style={styles.InputBox}>
+            <TouchableOpacity style={styles.classButton} onPress={() => router.push("/(tabs)/students/StudenClass")}>
+              <Text style={styles.classButtonText}>Masuk ke Student Class</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
       </View>
 
@@ -301,4 +307,19 @@ const styles = StyleSheet.create({
   regbutton: {
     marginLeft: 5,
   },
+
+  classButton: {
+    backgroundColor: "#1E88E5",
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginTop: 10,
+  },
+
+  classButtonText: {
+    textAlign: "center",
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold"
+  },
+
 });
