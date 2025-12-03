@@ -5,7 +5,10 @@ from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
-from .serializers import RegisterSerializer
+from .serializers import RegisterSerializer, UserDashboardSerializer
+from api.classes.models import Class
+from api.classes.serializers import ClassSerializer
+from rest_framework.permissions import IsAuthenticated
 
 
 class RegisterView(APIView):
@@ -52,4 +55,24 @@ class LoginView(APIView):
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             }
+        }, status=status.HTTP_200_OK)
+
+
+class DashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        
+        # 1. Data User & Joined Classes
+        user_serializer = UserDashboardSerializer(user)
+        
+        # 2. Recommended Classes (Kelas yang BELUM diikuti user)
+        # Ambil 5 kelas acak/terbaru yang user tidak ada di dalamnya
+        recommended_classes = Class.objects.exclude(students=user).order_by('?')[:5]
+        recommended_serializer = ClassSerializer(recommended_classes, many=True)
+
+        return Response({
+            "user": user_serializer.data,
+            "recommended_classes": recommended_serializer.data
         }, status=status.HTTP_200_OK)

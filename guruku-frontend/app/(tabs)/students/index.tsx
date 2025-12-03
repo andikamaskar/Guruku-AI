@@ -16,26 +16,31 @@ import {
 // Pastikan path ini sesuai
 import BottomNav from "../../../components/BottomNav";
 
+import { fetchDashboardData } from "../../../services/dashboard";
+
 // === 1. DEFINISI TIPE DATA (INTERFACES) === //
 interface ClassItem {
-  id: number;
-  title: string;
-  image: ImageSourcePropType | null;
-  guru: string;
-  isJoined: boolean;
-  progress: number;
-  kodeKelas: string;
+  id: string; // Updated to string for UUID
+  name: string; // Changed from title to name to match backend
+  description?: string;
+  teacher_name: string; // Changed from guru to teacher_name
+  invite_code: string; // Changed from kodeKelas to invite_code
+  students_count?: number;
+  // Fields below might need to be computed or added to backend if needed
+  image?: ImageSourcePropType | null;
+  isJoined?: boolean;
+  progress?: number;
 }
 
 interface ClassCardProps {
-  id: number;
+  id: string;
   title: string;
   guru: string;
-  image: ImageSourcePropType | null;
+  image?: ImageSourcePropType | null;
   isJoined: boolean;
   progress: number;
   kodeKelas: string;
-  onJoin: (id: number) => void;
+  onJoin: (id: string) => void;
 }
 
 const COLORS = {
@@ -113,6 +118,11 @@ const ClassCard: React.FC<ClassCardProps> = ({
 };
 
 export default function KelasScreen() {
+  const [joinedClasses, setJoinedClasses] = useState<ClassItem[]>([]);
+  const [recommendedClasses, setRecommendedClasses] = useState<ClassItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
   // === LOGIKA BACK HANDLER (KONFIRMASI KELUAR) ===
   useEffect(() => {
     const backAction = () => {
@@ -135,114 +145,71 @@ export default function KelasScreen() {
     return () => backHandler.remove(); // Membersihkan event listener saat component di-unmount
   }, []);
 
-  const [kelasList, setKelasList] = useState<ClassItem[]>([
-    {
-      id: 1,
-      title: "Aplikasi dan Pemrograman | Kelas X PPL",
-      image: null,
-      guru: "Budi Setiawan",
-      isJoined: true,
-      progress: 70,
-      kodeKelas: "AP-101",
-    },
-    {
-      id: 2,
-      title: "Pemrograman Internet | Kelas XI RPL",
-      image: null,
-      guru: "Nur Aini",
-      isJoined: false,
-      progress: 0,
-      kodeKelas: "PI-205",
-    },
-    {
-      id: 3,
-      title: "Matematika | Kelas X IPA",
-      image: null,
-      guru: "Rina Dewi",
-      isJoined: true,
-      progress: 30,
-      kodeKelas: "MT-102",
-    },
-    {
-      id: 4,
-      title: "Desain Grafis | Umum",
-      image: null,
-      guru: "Ayu Lestari",
-      isJoined: false,
-      progress: 0,
-      kodeKelas: "DG-300",
-    },
-    {
-      id: 5,
-      title: "Bahasa Inggris | Umum",
-      image: null,
-      guru: "Sarah Wati",
-      isJoined: true,
-      progress: 50,
-      kodeKelas: "BI-201",
-    },
-    {
-      id: 6,
-      title: "Jaringan Dasar | Kelas X TKJ",
-      image: null,
-      guru: "Eko Saputra",
-      isJoined: false,
-      progress: 0,
-      kodeKelas: "JD-105",
-    },
-    {
-      id: 7,
-      title: "Basis Data | Kelas XI RPL",
-      image: null,
-      guru: "Dedi Corbuz",
-      isJoined: false,
-      progress: 0,
-      kodeKelas: "BD-404",
-    },
-  ]);
+  useEffect(() => {
+    loadDashboard();
+  }, []);
 
-  const handleJoinClass = (classId: number) => {
-    setKelasList((prevKelasList) =>
-      prevKelasList.map((kelas) =>
-        kelas.id === classId ? { ...kelas, isJoined: true } : kelas
-      )
-    );
-    alert("Berhasil bergabung ke kelas!");
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchDashboardData();
+      setUser(data.user);
+
+      // Map backend data to frontend structure
+      // Note: Backend returns 'joined_classes' inside user object
+      const joined = data.user.joined_classes.map((cls: any) => ({
+        ...cls,
+        isJoined: true,
+        progress: 0, // Default progress 0 for now
+        image: null, // Default null image
+      }));
+
+      const recommended = data.recommended_classes.map((cls: any) => ({
+        ...cls,
+        isJoined: false,
+        progress: 0,
+        image: null,
+      }));
+
+      setJoinedClasses(joined);
+      setRecommendedClasses(recommended);
+    } catch (error) {
+      console.error("Failed to load dashboard:", error);
+      Alert.alert("Error", "Gagal memuat data dashboard");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAccessClass = (classId: number) => {
+  const handleJoinClass = (classId: string) => {
+    // Implement join logic here later
+    alert("Fitur gabung kelas belum diimplementasikan di backend!");
+  };
+
+  const handleAccessClass = (classId: string) => {
     console.log(`Navigasi ke kelas ID: ${classId}`);
-    setKelasList((prevKelasList) => {
-      const selectedClass = prevKelasList.find((item) => item.id === classId);
-      const otherClasses = prevKelasList.filter((item) => item.id !== classId);
-      if (!selectedClass) return prevKelasList;
-      return [selectedClass, ...otherClasses];
-    });
+    // Implement navigation logic
   };
-
-  const joinedClasses = kelasList.filter((item) => item.isJoined).slice(0, 2);
-  const recommendedClasses = kelasList
-    .filter((item) => !item.isJoined)
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 2);
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
       {/* Set StatusBar agar transparan/sesuai tema */}
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
-      
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* === HEADER === */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.headerTitle}>Halo, Veronica</Text>
+              <Text style={styles.headerTitle}>Halo, {user?.full_name || 'Student'}</Text>
               <Text style={styles.headerSubtitle}>
                 Selamat belajar kembali!
               </Text>
             </View>
             <TouchableOpacity style={styles.profileCircle}>
-              <Text style={{ color: "white", fontWeight: "bold" }}>V</Text>
+              <Text style={{ color: "white", fontWeight: "bold" }}>
+                {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'S'}
+              </Text>
             </TouchableOpacity>
           </View>
           <View style={styles.headerBannerWrapper}>
@@ -269,72 +236,80 @@ export default function KelasScreen() {
         </View>
 
         {/* === SECTION 1: KELAS YANG DIIKUTI === */}
-        {joinedClasses.length > 0 && (
-          <View>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Lanjutkan Belajar</Text>
-              <TouchableOpacity>
-                <Text style={styles.sectionLink}>Lihat Semua</Text>
-              </TouchableOpacity>
-            </View>
+        <View>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Lanjutkan Belajar</Text>
+            <TouchableOpacity>
+              <Text style={styles.sectionLink}>Lihat Semua</Text>
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.classGrid}>
-              {joinedClasses.map((item) => (
+          <View style={styles.classGrid}>
+            {loading ? (
+              <Text style={{ padding: 20, color: COLORS.mediumText }}>Memuat kelas...</Text>
+            ) : joinedClasses.length > 0 ? (
+              joinedClasses.map((item) => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.cardWrapperTouchable}
-                  onPress={() => item.isJoined && handleAccessClass(item.id)}
-                  activeOpacity={item.isJoined ? 0.7 : 1}
+                  onPress={() => handleAccessClass(item.id)}
+                  activeOpacity={0.7}
                 >
                   <ClassCard
                     id={item.id}
-                    title={item.title}
-                    guru={item.guru}
+                    title={item.name}
+                    guru={item.teacher_name}
                     image={item.image}
-                    isJoined={item.isJoined}
-                    progress={item.progress}
+                    isJoined={true}
+                    progress={item.progress || 0}
                     onJoin={handleJoinClass}
-                    kodeKelas={item.kodeKelas}
+                    kodeKelas={item.invite_code}
                   />
                 </TouchableOpacity>
-              ))}
-            </View>
+              ))
+            ) : (
+              <Text style={{ padding: 20, color: COLORS.mediumText }}>Belum ada kelas yang diikuti.</Text>
+            )}
           </View>
-        )}
+        </View>
 
         {/* === SECTION 2: REKOMENDASI === */}
-        {recommendedClasses.length > 0 && (
-          <View>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Rekomendasi Untukmu</Text>
-              <TouchableOpacity>
-                <Text style={styles.sectionLink}>Cari Lainnya</Text>
-              </TouchableOpacity>
-            </View>
+        <View>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Rekomendasi Untukmu</Text>
+            <TouchableOpacity>
+              <Text style={styles.sectionLink}>Cari Lainnya</Text>
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.classGrid}>
-              {recommendedClasses.map((item) => (
+          <View style={styles.classGrid}>
+            {loading ? (
+              <Text style={{ padding: 20, color: COLORS.mediumText }}>Memuat rekomendasi...</Text>
+            ) : recommendedClasses.length > 0 ? (
+              recommendedClasses.map((item) => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.cardWrapperTouchable}
-                  onPress={() => item.isJoined && handleAccessClass(item.id)}
-                  activeOpacity={item.isJoined ? 0.7 : 1}
+                  onPress={() => { }} // Rekomendasi belum bisa diakses langsung, harus join dulu
+                  activeOpacity={1}
                 >
                   <ClassCard
                     id={item.id}
-                    title={item.title}
-                    guru={item.guru}
+                    title={item.name}
+                    guru={item.teacher_name}
                     image={item.image}
-                    isJoined={item.isJoined}
-                    progress={item.progress}
+                    isJoined={false}
+                    progress={0}
                     onJoin={handleJoinClass}
-                    kodeKelas={item.kodeKelas}
+                    kodeKelas={item.invite_code}
                   />
                 </TouchableOpacity>
-              ))}
-            </View>
+              ))
+            ) : (
+              <Text style={{ padding: 20, color: COLORS.mediumText }}>Tidak ada rekomendasi saat ini.</Text>
+            )}
           </View>
-        )}
+        </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>

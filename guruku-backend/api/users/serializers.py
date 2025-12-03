@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import User
+from api.classes.serializers import ClassSerializer
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,3 +20,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])  # << WAJIB!
         user.save()
         return user
+
+class UserDashboardSerializer(serializers.ModelSerializer):
+    joined_classes = ClassSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'email', 'role', 'joined_classes']

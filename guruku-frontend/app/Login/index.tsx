@@ -1,10 +1,8 @@
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import axios from 'axios';
-import API_BASE_URL from '../../config/api';
+import { login } from '../../services/auth';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 
 export default function App() {
   const router = useRouter();
@@ -19,14 +17,11 @@ export default function App() {
     }
 
     try {
-      const res = await axios.post(`${API_BASE_URL}/users/login/`, {
-        email,
-        password
-      });
+      const data = await login(email, password);
 
-      console.log("Login Response:", res.data);
+      console.log("Login Response:", data);
 
-      const role = res.data.user.role;
+      const role = data.user.role;
 
       Alert.alert("Success", "Login berhasil!");
 
@@ -40,7 +35,7 @@ export default function App() {
       else {
         Alert.alert("Error", "Role tidak dikenali!");
       }
-      await AsyncStorage.setItem("role", res.data.user.role);
+      await AsyncStorage.setItem("role", role);
     } catch (error: any) {
       console.log(error.response?.data);
       Alert.alert("Login gagal", error.response?.data?.error || "Terjadi kesalahan");

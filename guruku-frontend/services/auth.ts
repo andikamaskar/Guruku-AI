@@ -1,4 +1,5 @@
 import api, { setAuthToken } from "./api";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const register = async (data: {
   email: string;
@@ -19,6 +20,7 @@ export const login = async (email: string, password: string) => {
   const accessToken = res.data.tokens.access;
 
   // simpan token
+  await AsyncStorage.setItem('accessToken', accessToken);
   setAuthToken(accessToken);
 
   return res.data;
