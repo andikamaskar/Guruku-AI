@@ -8,6 +8,8 @@ import {
   ScrollView,
   Image,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+
 import BottomNav from "../../../components/BottomNav";
 
 const COLORS = {
@@ -32,7 +34,13 @@ function ClassCard({
 }) {
   return (
     <View style={styles.classCardContent}>
-      <View style={styles.imageWrapper}>
+      <LinearGradient
+        colors={["#0B409C", "#0A2D69"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.imageWrapper}
+        >
+
         <View style={styles.emptyClassImage}>
           {image ? (
             <Image source={image} style={styles.cardImageActual} />
@@ -42,7 +50,7 @@ function ClassCard({
             </Text>
           )}
         </View>
-      </View>
+      </LinearGradient>
 
       <View style={styles.textWrapper}>
         <View>
@@ -184,70 +192,74 @@ export default function StudenClass() {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.headerTitle}>Halo, Veronica</Text>
-              <Text style={styles.headerSubtitle}>
-                Apa yang ingin kamu pelajari
-              </Text>
+        <LinearGradient
+            colors={["#005DFF", "#0B409C"]}  // gradient biru atas → bawah
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.header}
+        >
+            <View style={styles.headerTop}>
+                <View>
+                <Text style={styles.headerTitle}>Halo, Veronica</Text>
+                <Text style={styles.headerSubtitle}>Apa yang ingin kamu pelajari</Text>
+                </View>
+
+                <TouchableOpacity style={styles.profileCircle}>
+                <Text style={{ color: "white", fontWeight: "bold" }}>V</Text>
+                </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.profileCircle}>
-              <Text style={{ color: "white", fontWeight: "bold" }}>V</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={[styles.searchWrapper, { marginTop: 20 }]}>
+                <TextInput
+                placeholder="Cari Kelas"
+                placeholderTextColor="#999"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={styles.searchInput}
+                />
+            </View>
 
-          <View style={[styles.searchWrapper, { marginTop: 20 }]}>
-            <TextInput
-              placeholder="Cari Kelas"
-              placeholderTextColor="#999"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              style={styles.searchInput}
-            />
-          </View>
-
-          <View style={styles.tabRowInHeader}>
-            <TouchableOpacity
-              style={
-                activeTab === "joined"
-                  ? styles.tabActiveInHeader
-                  : styles.tabInactiveInHeader
-              }
-              onPress={() => setActiveTab("joined")}
-            >
-              <Text
+            <View style={styles.tabRowInHeader}>
+                <TouchableOpacity
                 style={
-                  activeTab === "joined"
-                    ? styles.tabActiveTextInHeader
-                    : styles.tabInactiveTextInHeader
+                    activeTab === "joined"
+                    ? styles.tabActiveInHeader
+                    : styles.tabInactiveInHeader
                 }
-              >
-                Kelas Yang Diikuti
-              </Text>
-            </TouchableOpacity>
+                onPress={() => setActiveTab("joined")}
+                >
+                <Text
+                    style={
+                    activeTab === "joined"
+                        ? styles.tabActiveTextInHeader
+                        : styles.tabInactiveTextInHeader
+                    }
+                >
+                    Kelas Yang Diikuti
+                </Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={
-                activeTab === "suggested"
-                  ? styles.tabActiveInHeader
-                  : styles.tabInactiveInHeader
-              }
-              onPress={() => setActiveTab("suggested")}
-            >
-              <Text
+                <TouchableOpacity
                 style={
-                  activeTab === "suggested"
-                    ? styles.tabActiveTextInHeader
-                    : styles.tabInactiveTextInHeader
+                    activeTab === "suggested"
+                    ? styles.tabActiveInHeader
+                    : styles.tabInactiveInHeader
                 }
-              >
-                Disarankan Untuk Anda
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+                onPress={() => setActiveTab("suggested")}
+                >
+                <Text
+                    style={
+                    activeTab === "suggested"
+                        ? styles.tabActiveTextInHeader
+                        : styles.tabInactiveTextInHeader
+                    }
+                >
+                    Disarankan Untuk Anda
+                </Text>
+                </TouchableOpacity>
+            </View>
+            </LinearGradient>
+
 
         <Text style={styles.sectionTitle}>Daftar Kelas</Text>
 
