@@ -65,7 +65,12 @@ const ClassCard: React.FC<ClassCardProps> = ({
 }) => {
   return (
     <View style={styles.classCardContent}>
-      <View style={styles.imageWrapper}>
+      <LinearGradient
+        colors={["#0B409C", "#0A2D69"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.imageWrapper}
+        >
         <View style={styles.emptyClassImage}>
           {image ? (
             <Image source={image} style={styles.cardImageActual} />
@@ -75,7 +80,7 @@ const ClassCard: React.FC<ClassCardProps> = ({
             </Text>
           )}
         </View>
-      </View>
+      </LinearGradient>
 
       <View style={styles.textWrapper}>
         <View>

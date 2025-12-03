@@ -112,6 +112,12 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
+          <View style={styles.InputBox}>
+            <TouchableOpacity style={styles.classButton} onPress={() => router.push("/(tabs)/students/StudenQuizz")}>
+              <Text style={styles.classButtonText}>Masuk ke Student Quizz</Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
       </View>
 

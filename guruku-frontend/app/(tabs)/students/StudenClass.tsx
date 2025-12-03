@@ -31,7 +31,7 @@ function ClassCard({
   progress,
   onJoin,
   kodeKelas,
-}) {
+}: ClassCardProps) {
   return (
     <View style={styles.classCardContent}>
       <LinearGradient
@@ -357,88 +357,88 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   
-  // --- Style Class Card KONSISTEN & GRID DIPERBAIKI ---
+  // --- Style Class Card ---
   classGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between", 
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 10,
   },
   cardWrapperTouchable: {
-    width: "47%", 
-    marginBottom: 20, 
+    width: "47%",
+    marginBottom: 20,
   },
-  classCardContent: { 
-    borderRadius: 15, 
+  classCardContent: {
+    borderRadius: 15,
     padding: 0,
     backgroundColor: "#fff",
     shadowColor: "#000",
-    shadowOpacity: 0.2, 
-    shadowRadius: 6, 
-    shadowOffset: { width: 0, height: 0 }, 
-    elevation: 10, 
-    minHeight: 260, 
-    overflow: 'hidden', 
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
+    minHeight: 260,
+    overflow: "hidden",
   },
   imageWrapper: {
     width: "100%",
     backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    borderTopLeftRadius: 10, 
-    borderTopRightRadius: 10, 
-    borderBottomLeftRadius: 10, 
-    borderBottomRightRadius: 0, 
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 0,
     padding: 5,
   },
   emptyClassImage: {
     width: "90%",
-    height: 110, 
+    height: 110,
     borderRadius: 10,
     backgroundColor: COLORS.lightGray,
-    marginBottom: 10, 
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardImageActual: { width: "100%", height: "100%", borderRadius: 10 },
   textWrapper: {
-    flex: 1, 
-    justifyContent: 'space-between', 
-    marginTop: 10, 
-    marginHorizontal: 12, 
-    paddingBottom: 10, 
+    flex: 1,
+    justifyContent: "space-between",
+    marginTop: 10,
+    marginHorizontal: 12,
+    paddingBottom: 10,
   },
-  classTitle: { fontSize: 13, fontWeight: "700", color: COLORS.darkText }, 
-  classGuru: { fontSize: 11, color: "#666", marginTop: 2 }, 
-  
+  classTitle: { fontSize: 13, fontWeight: "700", color: COLORS.darkText },
+  classGuru: { fontSize: 11, color: "#666", marginTop: 2 },
+
   classCode: {
-    fontSize: 10, 
-    color: COLORS.mediumText, 
+    fontSize: 10,
+    color: COLORS.mediumText,
     marginTop: 2,
-    fontStyle: 'italic', 
+    fontStyle: "italic",
   },
 
   progressBar: {
     width: "100%",
     height: 6,
-    backgroundColor: "#ddd", 
+    backgroundColor: "#ddd",
     borderRadius: 5,
-    marginTop: 8, 
+    marginTop: 8,
   },
   progressFill: {
     height: 6,
-    backgroundColor: COLORS.primary, 
-    borderRadius: 5
+    backgroundColor: COLORS.primary,
+    borderRadius: 5,
   },
   progressText: {
-    fontSize: 11, 
-    color: COLORS.primary, 
-    marginTop: 2
+    fontSize: 11,
+    color: COLORS.primary,
+    marginTop: 2,
   },
 
   joinButton: {
-    backgroundColor: COLORS.primary, 
+    backgroundColor: COLORS.primary,
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
