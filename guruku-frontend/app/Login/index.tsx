@@ -33,10 +33,10 @@ export default function App() {
       // Arahkan berdasar role
       if (role === "student") {
         router.replace("/(tabs)/students");
-      } 
+      }
       else if (role === "teacher") {
         router.replace("/(tabs)/teachers");
-      } 
+      }
       else {
         Alert.alert("Error", "Role tidak dikenali!");
       }
@@ -63,7 +63,7 @@ export default function App() {
         <View style={styles.FormBox}>
 
           <Image
-            style={styles.MainImage}
+            style={styles.MainImage as any}
             source={require('../../assets/images/login-img.png')}
           />
 
@@ -122,7 +122,7 @@ export default function App() {
       <View style={styles.MainFooter}>
         <View>
           <Text style={styles.FooterContent}>Pengguna Baru?</Text>
-          <TouchableOpacity style={styles.regbutton} onPress={() => router.push("Register/register")}>
+          <TouchableOpacity style={styles.regbutton} onPress={() => router.push("/Register")}>
             <Text style={styles.TextRegButton}>Register</Text>
           </TouchableOpacity>
         </View>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   },
 
   MainImage: {
-    width: 240, 
+    width: 240,
     height: 126,
     alignSelf: 'center',
     marginBottom: 20
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
 
   forgetpassword: {
     fontSize: 12,
-    textAlign: 'end',
+    textAlign: 'right',
   },
 
   button: {
@@ -302,5 +302,8 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     fontSize: 12,
+  },
+  regbutton: {
+    marginLeft: 5,
   },
 });

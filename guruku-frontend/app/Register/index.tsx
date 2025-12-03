@@ -93,7 +93,7 @@ export default function App() {
       {/* Main Header */}
       <View style={styles.MainHeader}>
         <Text style={styles.HeaderContent}>Sudah Mempunyai Akun?</Text>
-        <TouchableOpacity style={styles.TextLogButton} onPress={() => router.push("Login/login")} >
+        <TouchableOpacity onPress={() => router.push("Login/login")} >
           <Text style={styles.TextLogButton}>Login</Text>
         </TouchableOpacity>
       </View>
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
 
   forgetpassword: {
     fontSize: 12,
-    textAlign: 'end',
+    textAlign: 'right',
   },
 
   button: {
