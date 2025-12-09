@@ -1,29 +1,26 @@
-import { View, Text, StyleSheet } from "react-native";
+import React from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Dashboard from '../teachers/Dashboard';
+import BuatKelas from '../teachers/BuatKelas';
+import DetailKelas from '../teachers/DetailKelas';
+import InformasiKelas from '../teachers/InformasiKelas';
+
+export type TeacherStackParamList = {
+  Dashboard: undefined;
+  BuatKelas: undefined;
+  DetailKelas: { namaKelas: string };
+  InformasiKelas: undefined;
+};
+
+const Stack = createNativeStackNavigator<TeacherStackParamList>();
 
 export default function TeacherDashboard() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dashboard Guru</Text>
-      <Text style={styles.subtitle}>Halo, Guru! Kelola kelas Anda di sini 📚</Text>
-    </View>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Dashboard" component={Dashboard} />
+      <Stack.Screen name="BuatKelas" component={BuatKelas} />
+      <Stack.Screen name="DetailKelas" component={DetailKelas} />
+      <Stack.Screen name="InformasiKelas" component={InformasiKelas} />
+    </Stack.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#0B409C"
-  },
-  subtitle: {
-    fontSize: 16,
-    marginTop: 10,
-    color: "#666"
-  }
-});

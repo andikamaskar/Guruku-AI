@@ -26,7 +26,7 @@ export default function TabsIndexRedirect() {
       }
     };
     checkRole();
-  }, []);
+  },);
 
   if (loading) {
     return (
