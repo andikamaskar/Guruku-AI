@@ -7,17 +7,22 @@ import {
   Dimensions,
   PanResponderGestureState,
   GestureResponderEvent,
-  Image, // <--- 1. Jangan lupa import Image
+  Image,
 } from "react-native";
+import { useRouter } from "expo-router"; // <--- 1. Import useRouter
 
 export default function FloatingButton() {
+  // === 2. Inisialisasi Router ===
+  const router = useRouter();
+
   const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
   // === KONFIGURASI ===
   const BUTTON_SIZE = 60;
-  const BOTTOM_MARGIN = 90; 
-  const TOP_MARGIN = 50; 
-
+  const BOTTOM_MARGIN = 90;
+  const TOP_MARGIN = 50;
+  
+  // Ganti dengan gambar ikon chatbot Anda
   const BUTTON_IMAGE = require('@/assets/images/Chatbot-Icon.png'); 
 
   const MAX_Y = screenHeight - BOTTOM_MARGIN - BUTTON_SIZE;
@@ -61,6 +66,17 @@ export default function FloatingButton() {
         _: GestureResponderEvent,
         gestureState: PanResponderGestureState
       ) => {
+        // Cek apakah user melakukan drag atau hanya klik
+        // Jika pergeseran sangat kecil, anggap sebagai KLIK
+        const isDrag = Math.abs(gestureState.dx) > dragThreshold || Math.abs(gestureState.dy) > dragThreshold;
+
+        if (!isDrag) {
+            // Logic klik ada di onPress TouchableOpacity, tapi PanResponder kadang mengambil alih.
+            // Namun, karena onStartShouldSetPanResponder return false, 
+            // sentuhan diam (tap) akan diteruskan ke TouchableOpacity di bawahnya.
+            // Jadi logika navigasi aman ditaruh di onPress.
+        }
+
         let finalX: number;
         let finalY = gestureState.moveY - BUTTON_SIZE / 2;
 
@@ -68,9 +84,9 @@ export default function FloatingButton() {
         if (finalY < MIN_Y) finalY = MIN_Y;
 
         if (gestureState.moveX < screenWidth / 2) {
-          finalX = 20; 
+          finalX = 20;
         } else {
-          finalX = screenWidth - 80; 
+          finalX = screenWidth - 80;
         }
 
         Animated.spring(position, {
@@ -90,9 +106,11 @@ export default function FloatingButton() {
       <TouchableOpacity
         style={styles.btn}
         activeOpacity={0.8}
-        onPress={() => console.log("Floating Button Pressed")}
+ 
+        onPress={() => {
+            router.push("/Chatbot"); 
+        }}
       >
-        {/* === 2. GANTI TEXT DENGAN IMAGE DISINI === */}
         <Image 
           source={BUTTON_IMAGE} 
           style={styles.btnImage} 
@@ -108,10 +126,10 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   btn: {
-    width: 60, 
+    width: 60,
     height: 60,
-    borderRadius: 30, // Membuat lingkaran
-    backgroundColor: "#0038FF", // Warna background (akan tertutup gambar jika transparan)
+    borderRadius: 30,
+    backgroundColor: "#0038FF",
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
@@ -119,15 +137,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    
-    // === 3. TAMBAHAN PENTING ===
-    padding: 0, // Pastikan tidak ada padding
-    overflow: 'hidden', // MEMOTONG GAMBAR AGAR MENGIKUTI BENTUK LINGKARAN
+    padding: 0,
+    overflow: 'hidden',
   },
   btnImage: {
-    width: '100%', // Mengisi lebar penuh tombol (60)
-    height: '100%', // Mengisi tinggi penuh tombol (60)
-    resizeMode: 'cover', // 'cover' agar gambar penuh tanpa distorsi (terpotong dikit jika rasio beda)
-                         // Gunakan 'contain' jika ingin seluruh gambar terlihat tapi ada sisa space
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 });
