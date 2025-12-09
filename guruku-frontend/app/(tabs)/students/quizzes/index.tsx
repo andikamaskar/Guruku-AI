@@ -10,6 +10,7 @@ import {
   Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import FloatingButton from "../../../../components/FloatingButton";
 import BottomNav from "../../../../components/BottomNav";
 
 const COLORS = {
@@ -285,6 +286,8 @@ export default function KelasScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+      
+      <FloatingButton />
 
       <BottomNav activeTab="quizzes" />
     </View>

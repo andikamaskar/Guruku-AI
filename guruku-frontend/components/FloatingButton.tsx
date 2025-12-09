@@ -3,27 +3,36 @@ import {
   Animated,
   PanResponder,
   TouchableOpacity,
-  Text,
   StyleSheet,
   Dimensions,
   PanResponderGestureState,
   GestureResponderEvent,
+  Image, // <--- 1. Jangan lupa import Image
 } from "react-native";
 
 export default function FloatingButton() {
-  const screenWidth = Dimensions.get("window").width;
+  const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-  // Menggunakan useRef untuk value animasi
-  const position = useRef(new Animated.ValueXY({ x: screenWidth - 80, y: 500 })).current;
+  // === KONFIGURASI ===
+  const BUTTON_SIZE = 60;
+  const BOTTOM_MARGIN = 90; 
+  const TOP_MARGIN = 50; 
+
+  const BUTTON_IMAGE = require('@/assets/images/Chatbot-Icon.png'); 
+
+  const MAX_Y = screenHeight - BOTTOM_MARGIN - BUTTON_SIZE;
+  const MIN_Y = TOP_MARGIN;
+
+  const position = useRef(
+    new Animated.ValueXY({ x: screenWidth - 80, y: screenHeight - 150 })
+  ).current;
 
   const dragThreshold = 5;
 
   const panResponder = useRef(
     PanResponder.create({
-      // Mengabaikan sentuhan awal, menunggu gerakan (drag)
       onStartShouldSetPanResponder: () => false,
 
-      // Menambahkan tipe untuk gestureState
       onMoveShouldSetPanResponder: (
         _: GestureResponderEvent,
         gestureState: PanResponderGestureState
@@ -38,9 +47,13 @@ export default function FloatingButton() {
         _: GestureResponderEvent,
         gestureState: PanResponderGestureState
       ) => {
+        let newY = gestureState.moveY - BUTTON_SIZE / 2;
+        if (newY > MAX_Y) newY = MAX_Y;
+        if (newY < MIN_Y) newY = MIN_Y;
+
         position.setValue({
-          x: gestureState.moveX - 30, // 30 adalah setengah dari lebar tombol (60/2) agar posisi di tengah jari
-          y: gestureState.moveY - 30,
+          x: gestureState.moveX - BUTTON_SIZE / 2,
+          y: newY,
         });
       },
 
@@ -49,17 +62,21 @@ export default function FloatingButton() {
         gestureState: PanResponderGestureState
       ) => {
         let finalX: number;
+        let finalY = gestureState.moveY - BUTTON_SIZE / 2;
 
-        // Sticky logic: Cek apakah dilepas di kiri atau kanan layar
+        if (finalY > MAX_Y) finalY = MAX_Y;
+        if (finalY < MIN_Y) finalY = MIN_Y;
+
         if (gestureState.moveX < screenWidth / 2) {
-          finalX = 20; // Snap ke kiri (dengan margin sedikit)
+          finalX = 20; 
         } else {
-          finalX = screenWidth - 80; // Snap ke kanan
+          finalX = screenWidth - 80; 
         }
 
         Animated.spring(position, {
-          toValue: { x: finalX, y: gestureState.moveY - 30 },
+          toValue: { x: finalX, y: finalY },
           useNativeDriver: false,
+          friction: 5,
         }).start();
       },
     })
@@ -70,9 +87,16 @@ export default function FloatingButton() {
       style={[styles.floating, position.getLayout()]}
       {...panResponder.panHandlers}
     >
-      {/* Tambahkan activeOpacity agar ada efek visual saat ditekan */}
-      <TouchableOpacity style={styles.btn} activeOpacity={0.7} onPress={() => console.log("Pressed")}>
-        <Text style={styles.plus}>+</Text>
+      <TouchableOpacity
+        style={styles.btn}
+        activeOpacity={0.8}
+        onPress={() => console.log("Floating Button Pressed")}
+      >
+        {/* === 2. GANTI TEXT DENGAN IMAGE DISINI === */}
+        <Image 
+          source={BUTTON_IMAGE} 
+          style={styles.btnImage} 
+        />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -84,24 +108,26 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   btn: {
-    width: 60,
+    width: 60, 
     height: 60,
-    borderRadius: 30,
-    backgroundColor: "#0038FF",
+    borderRadius: 30, // Membuat lingkaran
+    backgroundColor: "#0038FF", // Warna background (akan tertutup gambar jika transparan)
     justifyContent: "center",
     alignItems: "center",
     elevation: 8,
-    // Menambahkan shadow untuk iOS agar terlihat sama dengan elevation Android
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
+    
+    // === 3. TAMBAHAN PENTING ===
+    padding: 0, // Pastikan tidak ada padding
+    overflow: 'hidden', // MEMOTONG GAMBAR AGAR MENGIKUTI BENTUK LINGKARAN
   },
-  plus: {
-    color: "#fff",
-    fontSize: 32,
-    fontWeight: "bold",
-    // Sedikit penyesuaian agar tanda plus benar-benar di tengah secara visual
-    marginTop: -2, 
+  btnImage: {
+    width: '100%', // Mengisi lebar penuh tombol (60)
+    height: '100%', // Mengisi tinggi penuh tombol (60)
+    resizeMode: 'cover', // 'cover' agar gambar penuh tanpa distorsi (terpotong dikit jika rasio beda)
+                         // Gunakan 'contain' jika ingin seluruh gambar terlihat tapi ada sisa space
   },
 });

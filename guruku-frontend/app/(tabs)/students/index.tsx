@@ -17,6 +17,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Asumsi path komponen & services ini sudah benar di project kamu
+import FloatingButton from "../../../components/FloatingButton";
 import BottomNav from "../../../components/BottomNav";
 import { fetchDashboardData } from "../../../services/dashboard";
 
@@ -329,6 +330,8 @@ export default function KelasScreen() {
         </View>
       </ScrollView>
 
+      <FloatingButton />
+      
       <BottomNav activeTab="home" />
     </View>
   );

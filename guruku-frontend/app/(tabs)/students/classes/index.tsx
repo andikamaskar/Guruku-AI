@@ -13,6 +13,7 @@ import {
   StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import FloatingButton from "../../../../components/FloatingButton";
 import BottomNav from "../../../../components/BottomNav";
 import { fetchClasses, joinClass } from "../../../../services/classes";
 import { fetchDashboardData } from "../../../../services/dashboard";
@@ -282,7 +283,7 @@ export default function StudenClass() {
           )}
         </View>
       </ScrollView>
-
+      <FloatingButton />
       <BottomNav activeTab="classes" />
     </View>
   );
