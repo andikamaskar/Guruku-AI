@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
+# Signals to automatically create profiles
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -52,3 +55,33 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.full_name} ({self.email})"
+
+class StudentProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
+    grade = models.CharField(max_length=10, blank=True, null=True) # e.g. "10", "11", "12"
+
+    def __str__(self):
+        return f"Student: {self.user.full_name}"
+
+class TeacherProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
+    nip = models.CharField(max_length=50, blank=True, null=True)
+    subject = models.CharField(max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"Teacher: {self.user.full_name}"
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        if instance.role == 'student':
+            StudentProfile.objects.create(user=instance)
+        elif instance.role == 'teacher':
+            TeacherProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if instance.role == 'student' and hasattr(instance, 'student_profile'):
+        instance.student_profile.save()
+    elif instance.role == 'teacher' and hasattr(instance, 'teacher_profile'):
+        instance.teacher_profile.save()

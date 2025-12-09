@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useRouter } from "expo-router";
 import {
   View,
   Text,
@@ -9,8 +10,7 @@ import {
   Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-
-import BottomNav from "../../../components/BottomNav";
+import BottomNav from "../../../../components/BottomNav";
 
 const COLORS = {
   primary: "#0B409C",
@@ -21,7 +21,17 @@ const COLORS = {
   bg: "#F5F6FA",
 };
 
-// === CLASS CARD === //
+interface ClassCardProps {
+  id: number;
+  title: string;
+  guru: string;
+  image: any;
+  isJoined: boolean;
+  progress: number;
+  onJoin: (id: number) => void;
+  kodeKelas: string;
+}
+
 function ClassCard({
   id,
   title,
@@ -39,7 +49,7 @@ function ClassCard({
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.imageWrapper}
-        >
+      >
 
         <View style={styles.emptyClassImage}>
           {image ? (
@@ -61,39 +71,41 @@ function ClassCard({
           <Text style={styles.classCode}>{kodeKelas}</Text>
         </View>
 
-        {isJoined ? (
-          <View>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progress}%` },
-                  { backgroundColor: COLORS.primary },
-                ]}
-              />
-            </View>
-            <Text style={[styles.progressText, { color: COLORS.primary }]}>
-              {progress}% Progress
-            </Text>
+        <View>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${progress}%` },
+                { backgroundColor: COLORS.primary },
+              ]}
+            />
           </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.joinButton}
-            onPress={() => onJoin(id)}
-          >
-            <Text style={styles.joinButtonText}>Gabung Sekarang</Text>
-          </TouchableOpacity>
-        )}
+          <Text style={[styles.progressText, { color: COLORS.primary }]}>
+            {progress}% Progress
+          </Text>
+        </View>
       </View>
     </View>
   );
 }
-// === END CLASS CARD === //
 
-export default function StudenClass() {
-  const [searchQuery, setSearchQuery] = useState("");
+export default function KelasScreen() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const [kelasList, setKelasList] = useState([
+  const [kelasList, setKelasList] = useState<
+    {
+      id: number;
+      title: string;
+      image: any;
+      guru: string;
+      isJoined: boolean;
+      progress: number;
+      kodeKelas: string;
+      lastAccessed: number | null;
+    }[]
+  >([
     {
       id: 1,
       title: "Aplikasi dan Pemrograman | Kelas X PPL",
@@ -146,7 +158,7 @@ export default function StudenClass() {
     },
   ]);
 
-  const handleJoinClass = (classId) => {
+  const handleJoinClass = (classId: number) => {
     setKelasList((prev) =>
       prev.map((kelas) =>
         kelas.id === classId
@@ -154,10 +166,9 @@ export default function StudenClass() {
           : kelas
       )
     );
-    alert("Berhasil bergabung ke kelas!");
   };
 
-  const handleAccessClass = (classId) => {
+  const handleAccessClass = (classId: number) => {
     setKelasList((prev) =>
       prev.map((kelas) =>
         kelas.id === classId
@@ -165,123 +176,117 @@ export default function StudenClass() {
           : kelas
       )
     );
+    console.log("Navigasi:", classId);
   };
 
-  // FILTER SEARCH
-  const filtered = kelasList.filter((kelas) => {
-    const q = searchQuery.toLowerCase();
+  const filteredClasses = kelasList.filter((kelas) => {
+    if (!kelas.isJoined) return false;
+
+    const query = searchQuery.toLowerCase();
+    if (query === "") return true;
+
     return (
-      kelas.title.toLowerCase().includes(q) ||
-      kelas.guru.toLowerCase().includes(q) ||
-      kelas.kodeKelas.toLowerCase().includes(q)
+      kelas.title.toLowerCase().includes(query) ||
+      kelas.guru.toLowerCase().includes(query) ||
+      kelas.kodeKelas.toLowerCase().includes(query)
     );
   });
 
-  const joined = filtered.filter((k) => k.isJoined);
-  const suggested = filtered.filter((k) => !k.isJoined);
+  const displayedClasses = [...filteredClasses].sort((a, b) => {
+    const tA = a.lastAccessed || 0;
+    const tB = b.lastAccessed || 0;
+    return tB - tA;
+  });
 
-  const sortedJoined = [...joined].sort(
-    (a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0)
-  );
-
-  const [activeTab, setActiveTab] = useState("joined");
-
-  const displayedClasses =
-    activeTab === "joined" ? sortedJoined : suggested;
+  const sectionTitleText = searchQuery ? "Hasil Pencarian" : "Kelas Anda";
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient
-            colors={["#005DFF", "#0B409C"]}  // gradient biru atas → bawah
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.header}
+          colors={["#005DFF", "#0B409C"]} // atas → bawah
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.header}
         >
-            <View style={styles.headerTop}>
-                <View>
-                <Text style={styles.headerTitle}>Halo, Veronica</Text>
-                <Text style={styles.headerSubtitle}>Apa yang ingin kamu pelajari</Text>
-                </View>
-
-                <TouchableOpacity style={styles.profileCircle}>
-                <Text style={{ color: "white", fontWeight: "bold" }}>V</Text>
-                </TouchableOpacity>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.headerTitle}>Halo, Veronica</Text>
+              <Text style={styles.headerSubtitle}>
+                Selamat belajar kembali!
+              </Text>
             </View>
 
-            <View style={[styles.searchWrapper, { marginTop: 20 }]}>
-                <TextInput
-                placeholder="Cari Kelas"
-                placeholderTextColor="#999"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={styles.searchInput}
-                />
+            <TouchableOpacity
+              style={styles.profileCircle}
+              onPress={() => router.push('/(tabs)/students/profile')}
+            >
+              <Text style={{ color: "white", fontWeight: "bold" }}>V</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.searchWrapper, { marginTop: 20 }]}>
+            <TextInput
+              placeholder="Cari Kelas Anda"
+              placeholderTextColor="#d6d6d6"
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+        </LinearGradient>
+
+        {/* ACTIVITIES */}
+        <View style={styles.activityCard}>
+          <View style={styles.activityRow}>
+            <View style={styles.activityLeft}>
+              <View style={styles.activityImage}></View>
             </View>
-
-            <View style={styles.tabRowInHeader}>
-                <TouchableOpacity
-                style={
-                    activeTab === "joined"
-                    ? styles.tabActiveInHeader
-                    : styles.tabInactiveInHeader
-                }
-                onPress={() => setActiveTab("joined")}
-                >
-                <Text
-                    style={
-                    activeTab === "joined"
-                        ? styles.tabActiveTextInHeader
-                        : styles.tabInactiveTextInHeader
-                    }
-                >
-                    Kelas Yang Diikuti
-                </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                style={
-                    activeTab === "suggested"
-                    ? styles.tabActiveInHeader
-                    : styles.tabInactiveInHeader
-                }
-                onPress={() => setActiveTab("suggested")}
-                >
-                <Text
-                    style={
-                    activeTab === "suggested"
-                        ? styles.tabActiveTextInHeader
-                        : styles.tabInactiveTextInHeader
-                    }
-                >
-                    Disarankan Untuk Anda
-                </Text>
-                </TouchableOpacity>
+            <View style={styles.activityRight}>
+              <Text style={styles.activityTitle}>My Activities</Text>
+              <Text style={styles.activitySubtitle}>
+                Cek progres kelas tugas kamu disini
+              </Text>
+              <TouchableOpacity style={styles.seeButton}>
+                <Text style={styles.seeButtonText}>Lihat </Text>
+              </TouchableOpacity>
             </View>
-            </LinearGradient>
+          </View>
+        </View>
 
-
-        <Text style={styles.sectionTitle}>Daftar Kelas</Text>
+        <Text style={styles.sectionTitle}>{sectionTitleText}</Text>
 
         <View style={styles.classGrid}>
-          {displayedClasses.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.cardWrapperTouchable}
-              onPress={() => item.isJoined && handleAccessClass(item.id)}
+          {displayedClasses.length > 0 ? (
+            displayedClasses.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.cardWrapperTouchable}
+                onPress={() => handleAccessClass(item.id)}
+                activeOpacity={0.7}
+              >
+                <ClassCard {...item} onJoin={handleJoinClass} />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View
+              style={{
+                width: "100%",
+                padding: 20,
+                alignItems: "center",
+              }}
             >
-              <ClassCard
-                {...item}
-                onJoin={handleJoinClass}
-              />
-            </TouchableOpacity>
-          ))}
+              <Text style={{ color: COLORS.mediumText }}>
+                Tidak ada kelas ditemukan.
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <BottomNav />
+      <BottomNav activeTab="quizzes" />
     </View>
   );
 }
@@ -289,20 +294,18 @@ export default function StudenClass() {
 const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.primary,
-    paddingTop: 20, 
+    paddingTop: 20,
     paddingHorizontal: 20,
     paddingBottom: 20,
     marginBottom: 0,
     borderBottomLeftRadius: 14,
     borderBottomRightRadius: 14,
   },
-  
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  
   headerTitle: { color: "#fff", fontSize: 22, fontWeight: "700" },
   headerSubtitle: { color: "#e7e7e7", fontSize: 14, marginTop: 2 },
   profileCircle: {
@@ -313,8 +316,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  
-  // --- Style SEARCH ---
   searchWrapper: {
     flexDirection: "row",
     backgroundColor: "#fff",
@@ -324,39 +325,48 @@ const styles = StyleSheet.create({
     height: 46,
   },
   searchInput: { flex: 1, paddingHorizontal: 15, fontSize: 16 },
-
-  // --- STYLE TAB (Di Dalam Header) ---
-  tabRowInHeader: { 
-    marginTop: 10,
-    flexDirection: "row", 
-    justifyContent: 'center', 
-  },
-  tabActiveInHeader: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderBottomWidth: 3,
-    borderBottomColor: COLORS.secondary, 
-  },
-  tabActiveTextInHeader: { 
-    color: 'white', 
-    fontWeight: "bold" 
-  }, 
-  tabInactiveInHeader: { 
-    paddingVertical: 6, 
-    paddingHorizontal: 12 
-  },
-  tabInactiveTextInHeader: { 
-    color: "#e7e7e7" 
-  },
-  
   sectionTitle: {
-    marginTop: 25, 
+    marginTop: 25,
     marginLeft: 20,
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
   },
-  
+  // --- ACTIVITY STYLES ---
+  activityCard: {
+    marginHorizontal: 20,
+    marginTop: 20,
+    marginBottom: 10,
+    padding: 15,
+    borderRadius: 15,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  activityRow: { flexDirection: "row", alignItems: "center" },
+  activityLeft: { flex: 1, alignItems: "center", justifyContent: "center" },
+  activityRight: { flex: 1.5, paddingLeft: 15, justifyContent: "center" },
+  activityImage: {
+    width: "100%",
+    height: 140,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12
+  },
+  activityTitle: { fontSize: 16, fontWeight: "700", color: COLORS.darkText },
+  activitySubtitle: { fontSize: 12, color: "#444", marginTop: 4 },
+  seeButton: {
+    marginTop: 10,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  seeButtonText: { color: "#fff", fontWeight: "700", fontSize: 11 },
+
   // --- Style Class Card ---
   classGrid: {
     flexDirection: "row",

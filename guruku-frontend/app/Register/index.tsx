@@ -1,4 +1,5 @@
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert, Platform, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import API_BASE_URL from "@/config/api";
@@ -12,7 +13,11 @@ export default function App() {
   const [fullName, setFullName] = useState("");
   const [birthDate, setBirthDate] = useState(""); // format: YYYY-MM-DD
   const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [role, setRole] = useState("student");
 
@@ -47,7 +52,7 @@ export default function App() {
   };
 
   const handleRegister = async () => {
-    if (!fullName || !birthDate || !email || !password) {
+    if (!fullName || !birthDate || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Semua field wajib diisi");
       return;
     }
@@ -65,6 +70,11 @@ export default function App() {
       return;
     }
 
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Password dan Konfirmasi Password tidak cocok");
+      return;
+    }
+
     try {
       const res = await axios.post(`${API_BASE_URL}/users/register/`, {
         full_name: fullName,
@@ -75,7 +85,7 @@ export default function App() {
       });
 
       Alert.alert("Sukses", "Registrasi berhasil!", [
-        { text: "OK", onPress: () => router.push("Login/login") }
+        { text: "OK", onPress: () => router.replace("Login") }
       ]);
 
     } catch (error: any) {
@@ -161,13 +171,34 @@ export default function App() {
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Password</Text>
-            <TextInput
-              style={styles.input}
-              secureTextEntry
-              placeholderTextColor="#aaa"
-              value={password}
-              onChangeText={setPassword}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                secureTextEntry={!showPassword}
+                placeholderTextColor="#aaa"
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="gray" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.InputBox}>
+            <Text style={styles.labelInput}>Konfirmasi Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                secureTextEntry={!showConfirmPassword}
+                placeholderTextColor="#aaa"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+              />
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                <Ionicons name={showConfirmPassword ? "eye" : "eye-off"} size={24} color="gray" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.InputBox}>
@@ -334,6 +365,19 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: 'black',
+  },
+
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'black',
+    justifyContent: 'space-between',
+  },
+  passwordInput: {
+    fontSize: 16,
+    paddingVertical: 6,
+    flex: 1,
   },
 
   forgetpassword: {

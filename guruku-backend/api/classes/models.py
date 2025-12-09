@@ -9,6 +9,7 @@ class Class(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    grade = models.CharField(max_length=10, blank=True, null=True) # Target grade level
 
     teacher = models.ForeignKey(
         User,
