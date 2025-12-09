@@ -1,5 +1,6 @@
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { login } from '../../services/auth';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -8,6 +9,7 @@ export default function App() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
@@ -76,14 +78,18 @@ export default function App() {
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Masukkan password"
-              placeholderTextColor="#aaa"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                    style={styles.passwordInput}
+                    secureTextEntry={!showPassword}
+                    placeholderTextColor="#aaa"
+                    value={password}
+                    onChangeText={setPassword}
+                  />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="gray" />
+                </TouchableOpacity>
+              </View>
             <Text style={styles.forgetpassword} />
           </View>
 
@@ -332,6 +338,20 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 14,
     fontWeight: "bold"
+  },
+
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'black',
+    justifyContent: 'space-between',
+  },
+
+  passwordInput: {
+    fontSize: 16,
+    paddingVertical: 6,
+    flex: 1,
   },
 
 });

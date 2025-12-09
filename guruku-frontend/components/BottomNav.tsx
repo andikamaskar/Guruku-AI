@@ -1,34 +1,46 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { useRouter } from "expo-router";
 
-export default function BottomNav() {
+interface BottomNavProps {
+  activeTab?: 'home' | 'classes' | 'quizzes' | 'profile';
+  onTabPress?: (tab: string) => void; // Optional if we want to handle custom logic
+}
+
+export default function BottomNav({ activeTab = 'home' }: BottomNavProps) {
+  const router = useRouter();
+
+  const navigateTo = (route: string) => {
+    router.push(route as any);
+  };
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => navigateTo("/(tabs)/students")}>
         <Image
           source={require("../assets/dashboard/Home-Icon.png")}
-          style={styles.icon}
+          style={activeTab === 'home' ? styles.icon : styles.iconGray}
         />
       </TouchableOpacity>
 
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => navigateTo("/(tabs)/students/classes")}>
         <Image
           source={require("../assets/dashboard/Class-Icon.png")}
-          style={styles.iconGray}
+          style={activeTab === 'classes' ? styles.icon : styles.iconGray}
         />
       </TouchableOpacity>
 
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => navigateTo("/(tabs)/students/quizzes")}>
         <Image
           source={require("../assets/dashboard/Quizz-Icon.png")}
-          style={styles.iconGray}
+          style={activeTab === 'quizzes' ? styles.icon : styles.iconGray}
         />
       </TouchableOpacity>
 
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => navigateTo("/(tabs)/students/profile")}>
         <Image
           source={require("../assets/dashboard/Profile-Icon.png")}
-          style={styles.iconGray}
+          style={activeTab === 'profile' ? styles.icon : styles.iconGray}
         />
       </TouchableOpacity>
     </View>
@@ -57,10 +69,12 @@ const styles = StyleSheet.create({
   icon: {
     width: 28,
     height: 28,
+    tintColor: "#0B409C", // Primary color for active
   },
   iconGray: {
     width: 28,
     height: 28,
-    opacity: 0.5, // warna jadi lebih grey
+    opacity: 0.5, // Grayed out
+    tintColor: "#333", // Ensure it's dark gray
   },
 });

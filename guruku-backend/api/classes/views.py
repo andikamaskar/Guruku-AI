@@ -10,12 +10,26 @@ class ClassListCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        # Jika guru, tampilkan kelas yang dia ajar
+        # Check if we want all classes (for recommendations) or just joined ones
+        mode = request.query_params.get('mode', 'joined') # 'joined' or 'all'
+        
         if request.user.role == 'teacher':
             classes = Class.objects.filter(teacher=request.user)
         else:
-            # Jika siswa, tampilkan kelas yang dia ikuti
-            classes = request.user.joined_classes.all()
+            # Student logic
+            if mode == 'all':
+                # Filter by grade if student has a profile
+                classes = Class.objects.all()
+                if hasattr(request.user, 'student_profile') and request.user.student_profile.grade:
+                    classes = classes.filter(grade=request.user.student_profile.grade)
+                
+                # Exclude joined classes from "all/recommended" list if needed, 
+                # or just return all and let frontend filter. 
+                # For now, let's return all matching grade.
+            else:
+                # Default: joined classes
+                classes = request.user.joined_classes.all()
+
         serializer = ClassSerializer(classes, many=True)
         return Response(serializer.data)
 

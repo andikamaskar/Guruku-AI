@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useRouter } from "expo-router";
 import {
   View,
   Text,
@@ -13,20 +14,20 @@ import {
   BackHandler,
   Alert,
 } from "react-native";
-// Pastikan path ini sesuai
-import BottomNav from "../../../components/BottomNav";
+import { LinearGradient } from 'expo-linear-gradient';
 
+// Asumsi path komponen & services ini sudah benar di project kamu
+import BottomNav from "../../../components/BottomNav";
 import { fetchDashboardData } from "../../../services/dashboard";
 
 // === 1. DEFINISI TIPE DATA (INTERFACES) === //
 interface ClassItem {
-  id: string; // Updated to string for UUID
-  name: string; // Changed from title to name to match backend
+  id: string;
+  name: string;
   description?: string;
-  teacher_name: string; // Changed from guru to teacher_name
-  invite_code: string; // Changed from kodeKelas to invite_code
+  teacher_name: string;
+  invite_code: string;
   students_count?: number;
-  // Fields below might need to be computed or added to backend if needed
   image?: ImageSourcePropType | null;
   isJoined?: boolean;
   progress?: number;
@@ -70,7 +71,7 @@ const ClassCard: React.FC<ClassCardProps> = ({
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.imageWrapper}
-        >
+      >
         <View style={styles.emptyClassImage}>
           {image ? (
             <Image source={image} style={styles.cardImageActual} />
@@ -122,13 +123,15 @@ const ClassCard: React.FC<ClassCardProps> = ({
   );
 };
 
+// === SCREEN UTAMA === //
 export default function KelasScreen() {
+  const router = useRouter();
   const [joinedClasses, setJoinedClasses] = useState<ClassItem[]>([]);
   const [recommendedClasses, setRecommendedClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  // === LOGIKA BACK HANDLER (KONFIRMASI KELUAR) ===
+  // === LOGIKA BACK HANDLER ===
   useEffect(() => {
     const backAction = () => {
       Alert.alert("Konfirmasi Keluar", "Apakah Anda yakin ingin keluar dari aplikasi?", [
@@ -139,7 +142,7 @@ export default function KelasScreen() {
         },
         { text: "YA", onPress: () => BackHandler.exitApp() },
       ]);
-      return true; // Mencegah aksi back default (langsung keluar)
+      return true;
     };
 
     const backHandler = BackHandler.addEventListener(
@@ -147,7 +150,7 @@ export default function KelasScreen() {
       backAction
     );
 
-    return () => backHandler.remove(); // Membersihkan event listener saat component di-unmount
+    return () => backHandler.remove();
   }, []);
 
   useEffect(() => {
@@ -160,13 +163,11 @@ export default function KelasScreen() {
       const data = await fetchDashboardData();
       setUser(data.user);
 
-      // Map backend data to frontend structure
-      // Note: Backend returns 'joined_classes' inside user object
       const joined = data.user.joined_classes.map((cls: any) => ({
         ...cls,
         isJoined: true,
-        progress: 0, // Default progress 0 for now
-        image: null, // Default null image
+        progress: 0,
+        image: null,
       }));
 
       const recommended = data.recommended_classes.map((cls: any) => ({
@@ -187,21 +188,18 @@ export default function KelasScreen() {
   };
 
   const handleJoinClass = (classId: string) => {
-    // Implement join logic here later
     alert("Fitur gabung kelas belum diimplementasikan di backend!");
   };
 
   const handleAccessClass = (classId: string) => {
     console.log(`Navigasi ke kelas ID: ${classId}`);
-    // Implement navigation logic
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-      {/* Set StatusBar agar transparan/sesuai tema */}
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* === HEADER === */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -211,14 +209,22 @@ export default function KelasScreen() {
                 Selamat belajar kembali!
               </Text>
             </View>
-            <TouchableOpacity style={styles.profileCircle}>
+            <TouchableOpacity
+              style={styles.profileCircle}
+              onPress={() => router.push('/(tabs)/students/profile')}
+            >
               <Text style={{ color: "white", fontWeight: "bold" }}>
                 {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'S'}
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Banner Image dengan Absolute Positioning */}
           <View style={styles.headerBannerWrapper}>
-            <View style={{ width: '100%', height: '100%', backgroundColor: 'rgba(255,255,255,0.1)' }} />
+            <Image
+              source={require('@/assets/dashboard/banner.png')}
+              style={styles.headerBannerImage}
+            />
           </View>
         </View>
 
@@ -226,7 +232,13 @@ export default function KelasScreen() {
         <View style={styles.activityCard}>
           <View style={styles.activityRow}>
             <View style={styles.activityLeft}>
-              <View style={styles.activityImage}></View>
+              {/* PERBAIKAN DI SINI: Menghapus spasi dan memisahkan style */}
+              <View style={styles.activityImageWrapper}>
+                <Image
+                  source={require('@/assets/dashboard/Activityimg.png')}
+                  style={styles.activityImageContent}
+                />
+              </View>
             </View>
             <View style={styles.activityRight}>
               <Text style={styles.activityTitle}>My Activities</Text>
@@ -295,7 +307,7 @@ export default function KelasScreen() {
                 <TouchableOpacity
                   key={item.id}
                   style={styles.cardWrapperTouchable}
-                  onPress={() => { }} // Rekomendasi belum bisa diakses langsung, harus join dulu
+                  onPress={() => { }}
                   activeOpacity={1}
                 >
                   <ClassCard
@@ -315,32 +327,30 @@ export default function KelasScreen() {
             )}
           </View>
         </View>
-
-        <View style={{ height: 100 }} />
       </ScrollView>
 
-      <BottomNav />
+      <BottomNav activeTab="home" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // --- STYLE HEADER DENGAN FIX SAFE AREA ---
+  // --- STYLE HEADER BARU (Sesuai Figma) ---
   header: {
     backgroundColor: COLORS.primary,
-    // Di sini logikanya: Jika Android, ambil tinggi status bar + 20px padding.
-    // Jika iOS, default 50px (atau bisa disesuaikan).
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 50,
     paddingHorizontal: 20,
-    paddingBottom: 25,
-    marginBottom: 0,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
+    height: 250,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    position: 'relative',
+    overflow: 'hidden',
   },
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
+    zIndex: 10,
   },
   headerTitle: { color: "#fff", fontSize: 22, fontWeight: "700" },
   headerSubtitle: { color: "#e7e7e7", fontSize: 14, marginTop: 2 },
@@ -353,18 +363,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  // Style untuk Gambar Banner (Absolute Position)
   headerBannerWrapper: {
-    marginTop: 20,
-    width: "100%",
-    height: 120,
-    borderRadius: 15,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    overflow: "hidden",
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    zIndex: 1,
   },
   headerBannerImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+    marginBottom: -5,
   },
 
   // --- ACTIVITY STYLES ---
@@ -384,12 +398,21 @@ const styles = StyleSheet.create({
   activityRow: { flexDirection: "row", alignItems: "center" },
   activityLeft: { flex: 1, alignItems: "center", justifyContent: "center" },
   activityRight: { flex: 1.5, paddingLeft: 15, justifyContent: "center" },
-  activityImage: {
+  
+  // Style Baru untuk Activity Image
+  activityImageWrapper: {
     width: "100%",
     height: 140,
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
+    overflow: 'hidden', // Penting agar gambar tidak keluar dari radius
   },
+  activityImageContent: {
+    width: "100%",
+    height: "100%",
+    resizeMode: 'cover',
+  },
+
   activityTitle: { fontSize: 16, fontWeight: "700", color: COLORS.darkText },
   activitySubtitle: { fontSize: 12, color: "#444", marginTop: 4 },
   seeButton: {
@@ -476,14 +499,12 @@ const styles = StyleSheet.create({
   },
   classTitle: { fontSize: 13, fontWeight: "700", color: COLORS.darkText },
   classGuru: { fontSize: 11, color: "#666", marginTop: 2 },
-
   classCode: {
     fontSize: 10,
     color: COLORS.mediumText,
     marginTop: 2,
     fontStyle: "italic",
   },
-
   progressBar: {
     width: "100%",
     height: 6,
@@ -501,7 +522,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginTop: 2,
   },
-
   joinButton: {
     backgroundColor: COLORS.primary,
     paddingVertical: 8,

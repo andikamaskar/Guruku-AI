@@ -8,7 +8,7 @@ import {
   Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import BottomNav from "../../../components/BottomNav";
+import BottomNav from "../../../../components/BottomNav";
 
 // --- Tipe Props BOTTOM NAV --- //
 interface BottomNavProps {
@@ -26,10 +26,10 @@ const StudentProfile: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* --- Header Section --- */}
         <LinearGradient
-            colors={["#005DFF", "#0B409C"]} // atas → bawah
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={styles.headerContainer}
+          colors={["#005DFF", "#0B409C"]} // atas → bawah
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.headerContainer}
         >
           <View style={styles.profileInfo}>
             {/* FOTO PROFILE */}
@@ -79,7 +79,7 @@ const StudentProfile: React.FC = () => {
       </ScrollView>
 
       {/* BOTTOM NAV */}
-      <BottomNav activeTab="profile" onTabPress={handlePress} />
+      <BottomNav activeTab="profile" />
     </View>
   );
 };
@@ -93,13 +93,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   scrollContent: {
-    paddingBottom: 100, 
+    paddingBottom: 100,
   },
   headerContainer: {
-    backgroundColor: '#004aad', 
+    backgroundColor: '#004aad',
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    paddingTop: 50, 
+    paddingTop: 50,
     paddingBottom: 30,
     alignItems: 'center',
   },
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60, // Setengah dari width/height agar bulat sempurna
-    backgroundColor: 'white', 
+    backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 15,
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    backgroundColor: '#154ca1', 
+    backgroundColor: '#154ca1',
     width: '100%',
     paddingVertical: 12,
     borderRadius: 14,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logoutButton: {
-    backgroundColor: 'red', 
+    backgroundColor: 'red',
     width: '100%',
     paddingVertical: 12,
     borderRadius: 14,

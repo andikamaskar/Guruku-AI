@@ -8,7 +8,7 @@ class ClassSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Class
-        fields = ['id', 'name', 'description', 'teacher', 'teacher_name', 'students_count', 'invite_code', 'created_at']
+        fields = ['id', 'name', 'description', 'grade', 'teacher', 'teacher_name', 'students_count', 'invite_code', 'created_at']
         read_only_fields = ['teacher', 'invite_code', 'created_at']
 
     def get_students_count(self, obj):
