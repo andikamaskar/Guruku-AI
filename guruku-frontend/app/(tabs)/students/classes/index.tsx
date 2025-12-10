@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useRouter } from "expo-router";
+// Gabungkan import dari expo-router
+import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   View,
   Text,
@@ -13,6 +14,7 @@ import {
   StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+// Pastikan path import ini benar sesuai struktur project Anda
 import FloatingButton from "../../../../components/FloatingButton";
 import BottomNav from "../../../../components/BottomNav";
 import { fetchClasses, joinClass } from "../../../../services/classes";
@@ -101,15 +103,28 @@ function ClassCard({
   );
 }
 
-export default function StudenClass() {
+export default function StudentClass() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"joined" | "suggested">("joined");
+  const params = useLocalSearchParams();
 
+  // === PERBAIKAN STATE ===
+  // Inisialisasi activeTab dengan mengecek params.initialTab terlebih dahulu
+  const [activeTab, setActiveTab] = useState<"joined" | "suggested">(
+    (params.initialTab as "joined" | "suggested") || "joined"
+  );
+
+  const [searchQuery, setSearchQuery] = useState("");
   const [joinedClasses, setJoinedClasses] = useState<any[]>([]);
   const [allClasses, setAllClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+
+  // Efek untuk memantau perubahan params (jika navigasi terjadi saat halaman sudah mount)
+  useEffect(() => {
+    if (params.initialTab) {
+      setActiveTab(params.initialTab as "joined" | "suggested");
+    }
+  }, [params.initialTab]);
 
   useEffect(() => {
     loadData();
@@ -152,7 +167,6 @@ export default function StudenClass() {
 
     if (selectedClass) {
       router.push({
-        // PERBAIKAN: Tambahkan '/students' di depan
         pathname: "/students/classes/DetailClass", 
         params: { 
           classId: classId, 

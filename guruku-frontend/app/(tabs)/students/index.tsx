@@ -132,6 +132,13 @@ export default function KelasScreen() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
+  const handleViewAll = (tabName: 'joined' | 'suggested') => {
+    router.push({
+      pathname: "/students/classes", // Pastikan path ini sesuai dengan file classes/index.tsx kamu
+      params: { initialTab: tabName } // Kita kirim data tab yang mau dibuka
+    });
+  };
+
   // === LOGIKA BACK HANDLER ===
   useEffect(() => {
     const backAction = () => {
@@ -275,8 +282,8 @@ export default function KelasScreen() {
         <View>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Lanjutkan Belajar</Text>
-            <TouchableOpacity>
-              <Text style={styles.sectionLink}>Lihat Semua</Text>
+            <TouchableOpacity onPress={() => handleViewAll('joined')}>
+                <Text style={styles.sectionLink}>Lihat Semua</Text>
             </TouchableOpacity>
           </View>
 
@@ -313,8 +320,8 @@ export default function KelasScreen() {
         <View>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Rekomendasi Untukmu</Text>
-            <TouchableOpacity>
-              <Text style={styles.sectionLink}>Cari Lainnya</Text>
+            <TouchableOpacity onPress={() => handleViewAll('suggested')}>
+                <Text style={styles.sectionLink}>Cari Lainnya</Text>
             </TouchableOpacity>
           </View>
 
