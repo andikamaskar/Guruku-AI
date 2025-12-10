@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
   View,
@@ -8,10 +8,17 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
+  StatusBar,
+  Platform,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import FloatingButton from "../../../../components/FloatingButton";
 import BottomNav from "../../../../components/BottomNav";
+
+// Import Service API
+import { fetchDashboardData } from "../../../../services/dashboard";
+import { fetchClasses } from "../../../../services/classes";
 
 const COLORS = {
   primary: "#0B409C",
@@ -23,13 +30,13 @@ const COLORS = {
 };
 
 interface ClassCardProps {
-  id: number;
+  id: string | number;
   title: string;
   guru: string;
   image: any;
   isJoined: boolean;
   progress: number;
-  onJoin: (id: number) => void;
+  onJoin: (id: string | number) => void;
   kodeKelas: string;
 }
 
@@ -51,7 +58,6 @@ function ClassCard({
         end={{ x: 0, y: 1 }}
         style={styles.imageWrapper}
       >
-
         <View style={styles.emptyClassImage}>
           {image ? (
             <Image source={image} style={styles.cardImageActual} />
@@ -95,94 +101,72 @@ export default function KelasScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const [kelasList, setKelasList] = useState<
-    {
-      id: number;
-      title: string;
-      image: any;
-      guru: string;
-      isJoined: boolean;
-      progress: number;
-      kodeKelas: string;
-      lastAccessed: number | null;
-    }[]
-  >([
-    {
-      id: 1,
-      title: "Aplikasi dan Pemrograman | Kelas X PPL",
-      image: null,
-      guru: "Budi Setiawan",
-      isJoined: true,
-      progress: 70,
-      kodeKelas: "AP-101",
-      lastAccessed: Date.now() - 500000,
-    },
-    {
-      id: 2,
-      title: "Pemrograman Internet | Kelas XI RPL",
-      image: null,
-      guru: "Nur Aini",
-      isJoined: false,
-      progress: 0,
-      kodeKelas: "PI-205",
-      lastAccessed: null,
-    },
-    {
-      id: 3,
-      title: "Matematika | Kelas X IPA",
-      image: null,
-      guru: "Rina Dewi",
-      isJoined: true,
-      progress: 30,
-      kodeKelas: "MT-102",
-      lastAccessed: Date.now(),
-    },
-    {
-      id: 4,
-      title: "Desain Grafis | Umum",
-      image: null,
-      guru: "Ayu Lestari",
-      isJoined: false,
-      progress: 0,
-      kodeKelas: "DG-300",
-      lastAccessed: null,
-    },
-    {
-      id: 5,
-      title: "Bahasa Inggris | Umum",
-      image: null,
-      guru: "Sarah Wati",
-      isJoined: true,
-      progress: 50,
-      kodeKelas: "BI-201",
-      lastAccessed: Date.now() - 100000,
-    },
-  ]);
+  // State untuk Data
+  const [kelasList, setKelasList] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleJoinClass = (classId: number) => {
-    setKelasList((prev) =>
-      prev.map((kelas) =>
-        kelas.id === classId
-          ? { ...kelas, isJoined: true, lastAccessed: Date.now() }
-          : kelas
-      )
-    );
+  // === 1. FETCH DATA DARI DATABASE ===
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      // Ambil Data User (untuk Header)
+      const dashboardData = await fetchDashboardData();
+      setUser(dashboardData.user);
+
+      // Ambil Daftar Kelas (Joined Classes)
+      // Kita asumsikan tab Quizzes/Activities menampilkan kelas yang sudah diikuti
+      const classesData = await fetchClasses("joined");
+
+      // Mapping data dari API ke format State lokal
+      const formattedClasses = classesData.map((cls: any) => ({
+        id: cls.id,
+        title: cls.name, // API: name -> UI: title
+        image: cls.image || null,
+        guru: cls.teacher_name, // API: teacher_name -> UI: guru
+        isJoined: true, // Karena fetch 'joined', pasti true
+        progress: 0, // Backend belum ada progress, default 0
+        kodeKelas: cls.invite_code, // API: invite_code -> UI: kodeKelas
+        lastAccessed: Date.now(), // Mock waktu akses agar urutan tetap jalan
+      }));
+
+      setKelasList(formattedClasses);
+    } catch (error) {
+      console.error("Gagal memuat data:", error);
+      Alert.alert("Error", "Gagal memuat data kelas.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAccessClass = (classId: number) => {
-    setKelasList((prev) =>
-      prev.map((kelas) =>
-        kelas.id === classId
-          ? { ...kelas, lastAccessed: Date.now() }
-          : kelas
-      )
-    );
-    console.log("Navigasi:", classId);
+  const handleJoinClass = (classId: number | string) => {
+    // Fungsi ini mungkin jarang dipakai di halaman ini karena listnya sudah 'Joined'
+    // Tapi kita biarkan untuk kompatibilitas
+    console.log("Join Class ID:", classId);
   };
 
+  const handleAccessClass = (classId: number | string) => {
+    const selectedClass = kelasList.find((c) => c.id === classId);
+    
+    // Navigasi ke Detail Kelas (Menggunakan logic yang sama dengan file sebelumnya)
+    if (selectedClass) {
+        router.push({
+          pathname: "/students/classes/DetailClass", 
+          params: { 
+            classId: classId, 
+            className: selectedClass.title 
+          }
+        });
+    }
+  };
+
+  // === 2. FILTERING ===
   const filteredClasses = kelasList.filter((kelas) => {
-    if (!kelas.isJoined) return false;
-
     const query = searchQuery.toLowerCase();
     if (query === "") return true;
 
@@ -193,6 +177,7 @@ export default function KelasScreen() {
     );
   });
 
+  // Sorting berdasarkan lastAccessed (jika diperlukan)
   const displayedClasses = [...filteredClasses].sort((a, b) => {
     const tA = a.lastAccessed || 0;
     const tB = b.lastAccessed || 0;
@@ -203,6 +188,8 @@ export default function KelasScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+      
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient
           colors={["#005DFF", "#0B409C"]} // atas → bawah
@@ -212,7 +199,8 @@ export default function KelasScreen() {
         >
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.headerTitle}>Halo, Veronica</Text>
+              {/* Gunakan Data User Dinamis */}
+              <Text style={styles.headerTitle}>Halo, {user?.full_name || "Student"}</Text>
               <Text style={styles.headerSubtitle}>
                 Selamat belajar kembali!
               </Text>
@@ -222,7 +210,9 @@ export default function KelasScreen() {
               style={styles.profileCircle}
               onPress={() => router.push('/(tabs)/students/profile')}
             >
-              <Text style={{ color: "white", fontWeight: "bold" }}>V</Text>
+              <Text style={{ color: "white", fontWeight: "bold" }}>
+                 {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "S"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -258,7 +248,9 @@ export default function KelasScreen() {
         <Text style={styles.sectionTitle}>{sectionTitleText}</Text>
 
         <View style={styles.classGrid}>
-          {displayedClasses.length > 0 ? (
+          {loading ? (
+             <Text style={{ padding: 20, color: COLORS.mediumText }}>Memuat data...</Text>
+          ) : displayedClasses.length > 0 ? (
             displayedClasses.map((item) => (
               <TouchableOpacity
                 key={item.id}
@@ -266,7 +258,10 @@ export default function KelasScreen() {
                 onPress={() => handleAccessClass(item.id)}
                 activeOpacity={0.7}
               >
-                <ClassCard {...item} onJoin={handleJoinClass} />
+                <ClassCard 
+                    {...item} 
+                    onJoin={handleJoinClass} 
+                />
               </TouchableOpacity>
             ))
           ) : (
@@ -278,7 +273,7 @@ export default function KelasScreen() {
               }}
             >
               <Text style={{ color: COLORS.mediumText }}>
-                Tidak ada kelas ditemukan.
+                {searchQuery ? "Tidak ada kelas ditemukan." : "Anda belum mengikuti kelas apapun."}
               </Text>
             </View>
           )}
@@ -297,7 +292,7 @@ export default function KelasScreen() {
 const styles = StyleSheet.create({
   header: {
     backgroundColor: COLORS.primary,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     marginBottom: 0,
@@ -321,13 +316,14 @@ const styles = StyleSheet.create({
   },
   searchWrapper: {
     flexDirection: "row",
-    backgroundColor: "#fff",
-    elevation: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.2)", // Sedikit transparan agar lebih modern
     borderRadius: 10,
-    padding: 6,
+    paddingHorizontal: 6,
     height: 46,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)"
   },
-  searchInput: { flex: 1, paddingHorizontal: 15, fontSize: 16 },
+  searchInput: { flex: 1, paddingHorizontal: 15, fontSize: 16, color: "white" },
   sectionTitle: {
     marginTop: 25,
     marginLeft: 20,
