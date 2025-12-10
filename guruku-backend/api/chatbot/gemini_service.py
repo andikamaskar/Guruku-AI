@@ -27,9 +27,10 @@ model = genai.GenerativeModel(
     system_instruction=TEACHER_INSTRUCTION
 )
 
-def ask_gemini(prompt: str) -> str:
+def ask_gemini(prompt: str, history: list = None) -> str:
     try:
-        response = model.generate_content(prompt)
+        chat = model.start_chat(history=history or [])
+        response = chat.send_message(prompt)
         return response.text
     except Exception as e:
         return f"Error: {str(e)}"

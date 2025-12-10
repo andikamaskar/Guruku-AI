@@ -6,7 +6,7 @@ from .views import (
 )
 
 urlpatterns = [
-    path("", ConversationListCreateView.as_view()),
-    path("<int:conversation_id>/", ConversationDetailView.as_view()),
-    path("<int:conversation_id>/send/", ChatbotMessageView.as_view()),
+    path("conversations/", ConversationListCreateView.as_view()),
+    path("conversations/<int:conversation_id>/", ConversationDetailView.as_view()),
+    path("conversations/<int:conversation_id>/message/", ChatbotMessageView.as_view()),
 ]

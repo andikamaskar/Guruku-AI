@@ -19,6 +19,14 @@ class ConversationListCreateView(APIView):
         title = request.data.get("title", "Percakapan Baru")
         convo = Conversation.objects.create(user=request.user, title=title)
 
+        # Create welcome message
+        welcome_text = f"Hallo, {request.user.full_name or 'User'}! Saya Guruku AI, siap membantu belajarmu. Tanyakan apa saja!"
+        ChatMessage.objects.create(
+            conversation=convo,
+            role="bot",
+            content=welcome_text
+        )
+
         return Response({"conversation_id": convo.id}, status=status.HTTP_201_CREATED)
 
 
@@ -42,8 +50,15 @@ class ChatbotMessageView(APIView):
             content=message
         )
 
-        # Panggil Gemini API
-        bot_answer = ask_gemini(message)
+        # Ambil history chat sebelumnya
+        previous_messages = ChatMessage.objects.filter(conversation=convo).order_by('timestamp')
+        history = []
+        for msg in previous_messages:
+            role = "user" if msg.role == "user" else "model"
+            history.append({"role": role, "parts": [msg.content]})
+
+        # Panggil Gemini API dengan history
+        bot_answer = ask_gemini(message, history)
 
         # Simpan jawaban bot
         bot_msg = ChatMessage.objects.create(

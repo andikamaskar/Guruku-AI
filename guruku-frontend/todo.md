@@ -54,17 +54,17 @@
 - [ ] **Halaman Create Class, Create Material, Create Quiz (untuk Guru)**  
   - Implementasikan halaman untuk membuat kelas, materi, dan kuis khusus untuk **guru**.
 
-- [ ] **Halaman Chatbot**  
+- [x] **Halaman Chatbot**  
   - Implementasikan halaman chatbot yang mengintegrasikan AI untuk membantu siswa dalam belajar.
 
 ---
 
 ### 4. Integrasi dengan Backend
-- [ ] **Setup Axios untuk API Calls**  
+- [x] **Setup Axios untuk API Calls**  
   - Konfigurasi **Axios** untuk berkomunikasi dengan backend API.
   - Pastikan base URL sesuai dengan URL backend.
 
-- [ ] **Koneksi ke Backend API (Login, Register, Kelas, Materi, Quiz, Chatbot)**  
+- [x] **Koneksi ke Backend API (Login, Register, Kelas, Materi, Quiz, Chatbot)**  
   - Gunakan Axios untuk melakukan request ke API.
   - Pastikan alur login, pendaftaran, serta akses data kelas, materi, kuis, dan chatbot berjalan dengan baik.
 
