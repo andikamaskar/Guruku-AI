@@ -1,40 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  SafeAreaView, 
-  FlatList, 
-  TouchableOpacity, 
-  StatusBar, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  SafeAreaView,
+  FlatList,
+  TouchableOpacity,
+  StatusBar,
   Platform,
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Tipe data materi (sesuaikan dengan API Anda nanti)
+// Ganti dengan URL API Anda yang sesuai
+const API_URL = 'https://digressive-unfacilely-dorla.ngrok-free.dev/api';
+
 interface Material {
   id: string;
   title: string;
-  date: string;
+  created_at: string;
+  is_completed: boolean;
 }
-
-// Data Dummy Sementara
-const DUMMY_MATERIALS: Record<string, Material[]> = {
-  "1": [
-    { id: 'm1', title: 'Pertemuan 1 - Pengenalan', date: 'Senin, 15 Juli 2024' },
-    { id: 'm2', title: 'Pertemuan 2 - Logika Dasar', date: 'Senin, 22 Juli 2024' },
-  ],
-  "2": [
-    { id: 'm1', title: 'Bab 1 - Aljabar', date: 'Selasa, 16 Juli 2024' },
-  ]
-};
 
 export default function DetailClassScreen() {
   const router = useRouter();
-  
-  // Menangkap parameter yang dikirim
   const params = useLocalSearchParams();
   const classId = params.classId as string;
   const className = params.className as string || "Detail Kelas";
@@ -43,33 +35,53 @@ export default function DetailClassScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulasi loading data
-    console.log("Membuka kelas ID:", classId);
-    setLoading(true);
-    
-    // Nanti ganti ini dengan fetch API ke backend Anda
-    setTimeout(() => {
-      const data = DUMMY_MATERIALS[classId] || [];
-      setMaterials(data);
-      setLoading(false);
-    }, 500);
+    fetchMaterials();
   }, [classId]);
 
+  const fetchMaterials = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('accessToken');
+      const response = await axios.get(`${API_URL}/materials/class/${classId}/`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMaterials(response.data);
+    } catch (error) {
+      console.error("Error fetching materials:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderItem = ({ item }: { item: Material }) => (
-    <TouchableOpacity style={styles.card}>
-      <Text style={styles.cardTitle}>{item.title}</Text>
-      <Text style={styles.cardDate}>{item.date}</Text>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => router.push({
+        pathname: "/(tabs)/students/classes/DetailClass/MaterialDetail",
+        params: { materialId: item.id, title: item.title }
+      })}
+    >
+      <View style={styles.cardContent}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.cardTitle}>{item.title}</Text>
+          <Text style={styles.cardDate}>
+            {new Date(item.created_at).toLocaleDateString('id-ID', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            })}
+          </Text>
+        </View>
+        {item.is_completed && (
+          <Ionicons name="checkmark-circle" size={24} color="#4ADE80" />
+        )}
+      </View>
     </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0B409C" />
-      
-      {/* Sembunyikan header default Expo */}
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* HEADER CUSTOM */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButtonTouchable}>
           <View style={styles.backButton}>
@@ -81,7 +93,6 @@ export default function DetailClassScreen() {
         </Text>
       </View>
 
-      {/* KONTEN */}
       <View style={styles.contentContainer}>
         {loading ? (
           <View style={styles.centerState}>
@@ -137,6 +148,11 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 15,
     elevation: 4,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   cardTitle: {
     color: '#FFFFFF',
