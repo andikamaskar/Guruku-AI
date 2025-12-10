@@ -5,5 +5,6 @@ urlpatterns = [
     path('classes/', include('api.classes.urls')),
     path('materials/', include('api.materials.urls')),
     path('quizzes/', include('api.quizzes.urls')),
+
     path('chatbot/', include('api.chatbot.urls')),
 ]
