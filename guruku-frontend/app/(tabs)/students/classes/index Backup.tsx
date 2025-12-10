@@ -146,20 +146,8 @@ export default function StudenClass() {
   };
 
   const handleAccessClass = (classId: string) => {
-    // Cari data kelas
-    const selectedClass = allClasses.find((c) => c.id === classId) || 
-                          joinedClasses.find((c) => c.id === classId);
-
-    if (selectedClass) {
-      router.push({
-        // PERBAIKAN: Tambahkan '/students' di depan
-        pathname: "/students/classes/DetailClass", 
-        params: { 
-          classId: classId, 
-          className: selectedClass.name 
-        }
-      });
-    }
+    console.log("Access class:", classId);
+    // Navigate to class detail
   };
 
   // Filter logic
