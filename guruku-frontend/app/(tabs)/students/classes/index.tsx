@@ -191,7 +191,12 @@ export default function StudenClass() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* HEADER */}
-        <View style={styles.header}>
+        <LinearGradient
+          colors={["#005DFF", "#0B409C"]} // atas → bawah
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.header}
+        >
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.headerTitle}>Halo, {user?.full_name || 'Student'}</Text>
@@ -257,7 +262,7 @@ export default function StudenClass() {
               </Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </LinearGradient>
 
         <Text style={styles.sectionTitle}>
           {activeTab === 'joined' ? 'Kelas Saya' : 'Rekomendasi Kelas'}
@@ -307,8 +312,8 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20, // Added padding bottom
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
     // Removed fixed height and overflow
   },
   headerTop: {

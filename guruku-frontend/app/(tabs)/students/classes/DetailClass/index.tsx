@@ -114,15 +114,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
     elevation: 5,
   },
   backButtonTouchable: { marginRight: 15 },
   backButton: {
     padding: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
     borderRadius: 8,
   },
   headerTitle: {

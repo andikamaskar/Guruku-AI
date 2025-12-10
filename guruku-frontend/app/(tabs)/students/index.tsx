@@ -193,7 +193,20 @@ export default function KelasScreen() {
   };
 
   const handleAccessClass = (classId: string) => {
-    console.log(`Navigasi ke kelas ID: ${classId}`);
+    const selectedClass = joinedClasses.find((c) => c.id === classId) || 
+                          recommendedClasses.find((c) => c.id === classId);
+
+    if (selectedClass) {
+      router.push({
+        pathname: "/students/classes/DetailClass", 
+        params: { 
+          classId: classId, 
+          className: selectedClass.name 
+        }
+      });
+    } else {
+      console.log("Data kelas tidak ditemukan untuk ID:", classId);
+    }
   };
 
   return (
@@ -202,7 +215,12 @@ export default function KelasScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* === HEADER === */}
-        <View style={styles.header}>
+        <LinearGradient
+                  colors={["#005DFF", "#0B409C"]} // atas → bawah
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 1 }}
+                  style={styles.header}
+        >
           <View style={styles.headerTop}>
             <View>
               <Text style={styles.headerTitle}>Halo, {user?.full_name || 'Student'}</Text>
@@ -227,7 +245,7 @@ export default function KelasScreen() {
               style={styles.headerBannerImage}
             />
           </View>
-        </View>
+        </LinearGradient>
 
         {/* === MY ACTIVITY === */}
         <View style={styles.activityCard}>
@@ -266,7 +284,7 @@ export default function KelasScreen() {
             {loading ? (
               <Text style={{ padding: 20, color: COLORS.mediumText }}>Memuat kelas...</Text>
             ) : joinedClasses.length > 0 ? (
-              joinedClasses.map((item) => (
+              joinedClasses.slice(0, 2).map((item) => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.cardWrapperTouchable}
@@ -304,7 +322,7 @@ export default function KelasScreen() {
             {loading ? (
               <Text style={{ padding: 20, color: COLORS.mediumText }}>Memuat rekomendasi...</Text>
             ) : recommendedClasses.length > 0 ? (
-              recommendedClasses.map((item) => (
+              recommendedClasses.slice(0, 2).map((item) => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.cardWrapperTouchable}
@@ -344,8 +362,8 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 50,
     paddingHorizontal: 20,
     height: 250,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
     position: 'relative',
     overflow: 'hidden',
   },
