@@ -163,36 +163,35 @@ export default function ChatBotScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Chat Area */}
-      <ImageBackground
-        // source={require('../../assets/images/chat-bg.png')}
-        style={styles.chatBackground}
-        imageStyle={{ opacity: 0.1 }}
-      >
-        {loading ? (
-          <View style={styles.centerState}>
-            <ActivityIndicator size="large" color="#0B409C" />
-          </View>
-        ) : (
-          <>
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={styles.chatList}
-              showsVerticalScrollIndicator={false}
-            />
-          </>
-        )}
-      </ImageBackground>
-
-      {/* Input Area */}
+      {/* Chat Area & Input Area wrapped in KeyboardAvoidingView */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-        style={styles.keyboardAvoidingView}
+        style={{ flex: 1 }}
       >
+        <ImageBackground
+          // source={require('../../assets/images/chat-bg.png')}
+          style={styles.chatBackground}
+          imageStyle={{ opacity: 0.1 }}
+        >
+          {loading ? (
+            <View style={styles.centerState}>
+              <ActivityIndicator size="large" color="#0B409C" />
+            </View>
+          ) : (
+            <>
+              <FlatList
+                ref={flatListRef}
+                data={messages}
+                renderItem={renderMessage}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.chatList}
+                showsVerticalScrollIndicator={false}
+              />
+            </>
+          )}
+        </ImageBackground>
+
         <View style={styles.inputContainer}>
           <View style={styles.inputWrapper}>
             <TouchableOpacity style={styles.attachButton}>
@@ -303,9 +302,6 @@ const styles = StyleSheet.create({
   botTimeText: { color: "#999" },
 
   // Input Area
-  keyboardAvoidingView: {
-    backgroundColor: '#fff',
-  },
   inputContainer: {
     flexDirection: "row",
     padding: 10,
