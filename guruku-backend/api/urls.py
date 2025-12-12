@@ -7,4 +7,5 @@ urlpatterns = [
     path('quizzes/', include('api.quizzes.urls')),
 
     path('chatbot/', include('api.chatbot.urls')),
+    path('admin/', include('api.admin_panel.urls')),
 ]

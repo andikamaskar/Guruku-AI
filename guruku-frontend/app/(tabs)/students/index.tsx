@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import {
   View,
   Text,
@@ -140,26 +140,28 @@ export default function KelasScreen() {
   };
 
   // === LOGIKA BACK HANDLER ===
-  useEffect(() => {
-    const backAction = () => {
-      Alert.alert("Konfirmasi Keluar", "Apakah Anda yakin ingin keluar dari aplikasi?", [
-        {
-          text: "Batal",
-          onPress: () => null,
-          style: "cancel",
-        },
-        { text: "YA", onPress: () => BackHandler.exitApp() },
-      ]);
-      return true;
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        Alert.alert("Konfirmasi Keluar", "Apakah Anda yakin ingin keluar dari aplikasi?", [
+          {
+            text: "Batal",
+            onPress: () => null,
+            style: "cancel",
+          },
+          { text: "YA", onPress: () => BackHandler.exitApp() },
+        ]);
+        return true;
+      };
 
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
 
-    return () => backHandler.remove();
-  }, []);
+      return () => backHandler.remove();
+    }, [])
+  );
 
   useEffect(() => {
     loadDashboard();
@@ -200,15 +202,15 @@ export default function KelasScreen() {
   };
 
   const handleAccessClass = (classId: string) => {
-    const selectedClass = joinedClasses.find((c) => c.id === classId) || 
-                          recommendedClasses.find((c) => c.id === classId);
+    const selectedClass = joinedClasses.find((c) => c.id === classId) ||
+      recommendedClasses.find((c) => c.id === classId);
 
     if (selectedClass) {
       router.push({
-        pathname: "/students/classes/DetailClass", 
-        params: { 
-          classId: classId, 
-          className: selectedClass.name 
+        pathname: "/students/classes/DetailClass",
+        params: {
+          classId: classId,
+          className: selectedClass.name
         }
       });
     } else {
@@ -223,10 +225,10 @@ export default function KelasScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* === HEADER === */}
         <LinearGradient
-                  colors={["#005DFF", "#0B409C"]} // atas → bawah
-                  start={{ x: 0.5, y: 0 }}
-                  end={{ x: 0.5, y: 1 }}
-                  style={styles.header}
+          colors={["#005DFF", "#0B409C"]} // atas → bawah
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.header}
         >
           <View style={styles.headerTop}>
             <View>
@@ -236,12 +238,19 @@ export default function KelasScreen() {
               </Text>
             </View>
             <TouchableOpacity
-              style={styles.profileCircle}
+              style={[styles.profileCircle, user?.profile_picture ? { backgroundColor: 'transparent', borderWidth: 0 } : {}]}
               onPress={() => router.push('/(tabs)/students/profile')}
             >
-              <Text style={{ color: "white", fontWeight: "bold" }}>
-                {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'S'}
-              </Text>
+              {user?.profile_picture ? (
+                <Image
+                  source={{ uri: user.profile_picture.startsWith('http') ? user.profile_picture : `http://10.0.2.2:8000${user.profile_picture}` }}
+                  style={{ width: 40, height: 40, borderRadius: 20 }}
+                />
+              ) : (
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'S'}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -283,7 +292,7 @@ export default function KelasScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Lanjutkan Belajar</Text>
             <TouchableOpacity onPress={() => handleViewAll('joined')}>
-                <Text style={styles.sectionLink}>Lihat Semua</Text>
+              <Text style={styles.sectionLink}>Lihat Semua</Text>
             </TouchableOpacity>
           </View>
 
@@ -321,7 +330,7 @@ export default function KelasScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Rekomendasi Untukmu</Text>
             <TouchableOpacity onPress={() => handleViewAll('suggested')}>
-                <Text style={styles.sectionLink}>Cari Lainnya</Text>
+              <Text style={styles.sectionLink}>Cari Lainnya</Text>
             </TouchableOpacity>
           </View>
 
@@ -356,7 +365,7 @@ export default function KelasScreen() {
       </ScrollView>
 
       <FloatingButton />
-      
+
       <BottomNav activeTab="home" />
     </View>
   );
@@ -426,7 +435,7 @@ const styles = StyleSheet.create({
   activityRow: { flexDirection: "row", alignItems: "center" },
   activityLeft: { flex: 1, alignItems: "center", justifyContent: "center" },
   activityRight: { flex: 1.5, paddingLeft: 15, justifyContent: "center" },
-  
+
   // Style Baru untuk Activity Image
   activityImageWrapper: {
     width: "100%",

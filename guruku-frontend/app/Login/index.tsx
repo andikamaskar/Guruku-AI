@@ -34,10 +34,14 @@ export default function App() {
       else if (role === "teacher") {
         router.replace("/(tabs)/teachers");
       }
+      else if (role === "admin") {
+        router.replace("/admin/dashboard");
+      }
       else {
         Alert.alert("Error", "Role tidak dikenali!");
       }
       await AsyncStorage.setItem("role", role);
+      await AsyncStorage.setItem("is_verified", String(data.user.is_verified));
     } catch (error: any) {
       console.log(error.response?.data);
       Alert.alert("Login gagal", error.response?.data?.error || "Terjadi kesalahan");
@@ -78,18 +82,18 @@ export default function App() {
 
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                    style={styles.passwordInput}
-                    secureTextEntry={!showPassword}
-                    placeholderTextColor="#aaa"
-                    value={password}
-                    onChangeText={setPassword}
-                  />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="gray" />
-                </TouchableOpacity>
-              </View>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                secureTextEntry={!showPassword}
+                placeholderTextColor="#aaa"
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons name={showPassword ? "eye" : "eye-off"} size={24} color="gray" />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.forgetpassword} />
           </View>
 

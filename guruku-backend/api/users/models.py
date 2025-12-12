@@ -35,6 +35,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    def profile_upload_path(instance, filename):
+        import os
+        from uuid import uuid4
+        ext = filename.split('.')[-1]
+        filename = f'{uuid4()}.{ext}'
+        return os.path.join('profile_pics/', filename)
+
+    profile_picture = models.ImageField(upload_to=profile_upload_path, null=True, blank=True)
 
     # ✅ Fix reverse accessor conflict
     groups = models.ManyToManyField(
@@ -59,6 +67,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 class StudentProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     grade = models.CharField(max_length=10, blank=True, null=True) # e.g. "10", "11", "12"
+    nisn = models.CharField(max_length=20, blank=True, null=True)
 
     def __str__(self):
         return f"Student: {self.user.full_name}"

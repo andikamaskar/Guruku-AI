@@ -5,10 +5,11 @@ from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
-from .serializers import RegisterSerializer, UserDashboardSerializer
+from .serializers import RegisterSerializer, UserDashboardSerializer, UpdateProfileSerializer
 from api.classes.models import Class
 from api.classes.serializers import ClassSerializer
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class RegisterView(APIView):
@@ -76,3 +77,19 @@ class DashboardView(APIView):
             "user": user_serializer.data,
             "recommended_classes": recommended_serializer.data
         }, status=status.HTTP_200_OK)
+
+class ProfileUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser) # To handle file uploads
+
+    def get(self, request):
+         return Response(UserDashboardSerializer(request.user).data)
+
+    def patch(self, request):
+        user = request.user
+        serializer = UpdateProfileSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            # Return updated user data similar to dashboard or login
+            return Response(UserDashboardSerializer(user).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
