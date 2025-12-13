@@ -19,6 +19,7 @@ import FloatingButton from "../../../../components/FloatingButton";
 import BottomNav from "../../../../components/BottomNav";
 import { fetchClasses, joinClass } from "../../../../services/classes";
 import { fetchDashboardData } from "../../../../services/dashboard";
+import API_BASE_URL from "../../../../config/api";
 
 const COLORS = {
   primary: "#0B409C",
@@ -162,15 +163,15 @@ export default function StudentClass() {
 
   const handleAccessClass = (classId: string) => {
     // Cari data kelas
-    const selectedClass = allClasses.find((c) => c.id === classId) || 
-                          joinedClasses.find((c) => c.id === classId);
+    const selectedClass = allClasses.find((c) => c.id === classId) ||
+      joinedClasses.find((c) => c.id === classId);
 
     if (selectedClass) {
       router.push({
-        pathname: "/students/classes/DetailClass", 
-        params: { 
-          classId: classId, 
-          className: selectedClass.name 
+        pathname: "/students/classes/DetailClass",
+        params: {
+          classId: classId,
+          className: selectedClass.name
         }
       });
     }
@@ -218,12 +219,23 @@ export default function StudentClass() {
             </View>
 
             <TouchableOpacity
-              style={styles.profileCircle}
+              style={[styles.profileCircle, user?.profile_picture ? { backgroundColor: 'transparent', borderWidth: 0 } : {}]}
               onPress={() => router.push('/(tabs)/students/profile')}
             >
-              <Text style={{ color: "white", fontWeight: "bold" }}>
-                {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'S'}
-              </Text>
+              {user?.profile_picture ? (
+                <Image
+                  source={{
+                    uri: (user.profile_picture.startsWith('http')
+                      ? user.profile_picture
+                      : `${API_BASE_URL.replace('/api', '')}${user.profile_picture}`) + `?t=${new Date().getTime()}`
+                  }}
+                  style={{ width: 40, height: 40, borderRadius: 20 }}
+                />
+              ) : (
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {user?.full_name ? user.full_name.charAt(0).toUpperCase() : 'S'}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
 

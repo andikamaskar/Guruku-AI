@@ -19,6 +19,7 @@ import BottomNav from "../../../../components/BottomNav";
 // Import Service API
 import { fetchDashboardData } from "../../../../services/dashboard";
 import { fetchClasses } from "../../../../services/classes";
+import API_BASE_URL from "../../../../config/api";
 
 const COLORS = {
   primary: "#0B409C",
@@ -152,16 +153,16 @@ export default function KelasScreen() {
 
   const handleAccessClass = (classId: number | string) => {
     const selectedClass = kelasList.find((c) => c.id === classId);
-    
+
     // Navigasi ke Detail Kelas (Menggunakan logic yang sama dengan file sebelumnya)
     if (selectedClass) {
-        router.push({
-          pathname: "/students/classes/DetailClass", 
-          params: { 
-            classId: classId, 
-            className: selectedClass.title 
-          }
-        });
+      router.push({
+        pathname: "/students/classes/DetailClass",
+        params: {
+          classId: classId,
+          className: selectedClass.title
+        }
+      });
     }
   };
 
@@ -189,7 +190,7 @@ export default function KelasScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-      
+
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient
           colors={["#005DFF", "#0B409C"]} // atas → bawah
@@ -207,12 +208,23 @@ export default function KelasScreen() {
             </View>
 
             <TouchableOpacity
-              style={styles.profileCircle}
+              style={[styles.profileCircle, user?.profile_picture ? { backgroundColor: 'transparent', borderWidth: 0 } : {}]}
               onPress={() => router.push('/(tabs)/students/profile')}
             >
-              <Text style={{ color: "white", fontWeight: "bold" }}>
-                 {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "S"}
-              </Text>
+              {user?.profile_picture ? (
+                <Image
+                  source={{
+                    uri: (user.profile_picture.startsWith('http')
+                      ? user.profile_picture
+                      : `${API_BASE_URL.replace('/api', '')}${user.profile_picture}`) + `?t=${new Date().getTime()}`
+                  }}
+                  style={{ width: 40, height: 40, borderRadius: 20 }}
+                />
+              ) : (
+                <Text style={{ color: "white", fontWeight: "bold" }}>
+                  {user?.full_name ? user.full_name.charAt(0).toUpperCase() : "S"}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -249,7 +261,7 @@ export default function KelasScreen() {
 
         <View style={styles.classGrid}>
           {loading ? (
-             <Text style={{ padding: 20, color: COLORS.mediumText }}>Memuat data...</Text>
+            <Text style={{ padding: 20, color: COLORS.mediumText }}>Memuat data...</Text>
           ) : displayedClasses.length > 0 ? (
             displayedClasses.map((item) => (
               <TouchableOpacity
@@ -258,9 +270,9 @@ export default function KelasScreen() {
                 onPress={() => handleAccessClass(item.id)}
                 activeOpacity={0.7}
               >
-                <ClassCard 
-                    {...item} 
-                    onJoin={handleJoinClass} 
+                <ClassCard
+                  {...item}
+                  onJoin={handleJoinClass}
                 />
               </TouchableOpacity>
             ))
@@ -281,7 +293,7 @@ export default function KelasScreen() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
-      
+
       <FloatingButton />
 
       <BottomNav activeTab="quizzes" />

@@ -20,6 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import FloatingButton from "../../../components/FloatingButton";
 import BottomNav from "../../../components/BottomNav";
 import { fetchDashboardData } from "../../../services/dashboard";
+import API_BASE_URL from "../../../config/api";
 
 // === 1. DEFINISI TIPE DATA (INTERFACES) === //
 interface ClassItem {
@@ -243,7 +244,11 @@ export default function KelasScreen() {
             >
               {user?.profile_picture ? (
                 <Image
-                  source={{ uri: user.profile_picture.startsWith('http') ? user.profile_picture : `http://10.0.2.2:8000${user.profile_picture}` }}
+                  source={{
+                    uri: (user.profile_picture.startsWith('http')
+                      ? user.profile_picture
+                      : `${API_BASE_URL.replace('/api', '')}${user.profile_picture}`) + `?t=${new Date().getTime()}`
+                  }}
                   style={{ width: 40, height: 40, borderRadius: 20 }}
                 />
               ) : (
