@@ -208,7 +208,7 @@ export default function KelasScreen() {
 
     if (selectedClass) {
       router.push({
-        pathname: "/students/classes/DetailClass",
+        pathname: "/(tabs)/students/classes/DetailClass",
         params: {
           classId: classId,
           className: selectedClass.name
