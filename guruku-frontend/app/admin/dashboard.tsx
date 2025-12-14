@@ -105,10 +105,19 @@ export default function AdminDashboard() {
                                 style={styles.avatar}
                             />
                             <View style={styles.requestInfo}>
-                                <Text style={styles.reqName}>{user.full_name}</Text>
+                                <Text style={styles.reqName}>{user.full_name} ({user.role})</Text>
                                 <Text style={styles.reqDetail}>{user.email}</Text>
-                                <Text style={styles.reqDetail}>NISN: {user.nisn || '-'}</Text>
-                                <Text style={styles.reqDetail}>Grade: {user.grade || '-'}</Text>
+                                {user.role === 'student' ? (
+                                    <>
+                                        <Text style={styles.reqDetail}>NISN: {user.nisn || '-'}</Text>
+                                        <Text style={styles.reqDetail}>Grade: {user.grade || '-'}</Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Text style={styles.reqDetail}>NIP: {user.nip || '-'}</Text>
+                                        <Text style={styles.reqDetail}>Mapel: {user.subject || '-'}</Text>
+                                    </>
+                                )}
                             </View>
                             <TouchableOpacity style={styles.verifyBtn} onPress={() => setSelectedUser(user)}>
                                 <Text style={styles.verifyText}>View</Text>
@@ -141,10 +150,22 @@ export default function AdminDashboard() {
                                     <Text style={styles.value}>{selectedUser.full_name}</Text>
                                     <Text style={styles.label}>Email:</Text>
                                     <Text style={styles.value}>{selectedUser.email}</Text>
-                                    <Text style={styles.label}>NISN:</Text>
-                                    <Text style={styles.value}>{selectedUser.nisn || 'Not provided'}</Text>
-                                    <Text style={styles.label}>Grade:</Text>
-                                    <Text style={styles.value}>{selectedUser.grade || 'Not provided'}</Text>
+
+                                    {selectedUser.role === 'student' ? (
+                                        <>
+                                            <Text style={styles.label}>NISN:</Text>
+                                            <Text style={styles.value}>{selectedUser.nisn || 'Not provided'}</Text>
+                                            <Text style={styles.label}>Grade:</Text>
+                                            <Text style={styles.value}>{selectedUser.grade || 'Not provided'}</Text>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Text style={styles.label}>NIP:</Text>
+                                            <Text style={styles.value}>{selectedUser.nip || 'Not provided'}</Text>
+                                            <Text style={styles.label}>Mata Pelajaran:</Text>
+                                            <Text style={styles.value}>{selectedUser.subject || 'Not provided'}</Text>
+                                        </>
+                                    )}
                                 </View>
 
                                 <View style={styles.modalActions}>

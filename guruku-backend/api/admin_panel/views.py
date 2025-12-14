@@ -23,7 +23,8 @@ class AdminDashboardViewSet(viewsets.ViewSet):
         total_users = User.objects.count()
         students_count = User.objects.filter(role='student').count()
         teachers_count = User.objects.filter(role='teacher').count()
-        pending_verification = User.objects.filter(role='student', is_verified=False).count()
+        # Count pending verification for both students and teachers
+        pending_verification = User.objects.filter(role__in=['student', 'teacher'], is_verified=False).count()
 
         return Response({
             "total_users": total_users,
@@ -37,9 +38,13 @@ class AdminDashboardViewSet(viewsets.ViewSet):
         if request.user.role != 'admin':
              return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
         
-        # Get unverified students
-        unverified_students = User.objects.filter(role='student', is_verified=False).select_related('student_profile')
-        serializer = UserDashboardSerializer(unverified_students, many=True)
+        # Get unverified students AND teachers
+        unverified_users = User.objects.filter(
+            role__in=['student', 'teacher'], 
+            is_verified=False
+        ).select_related('student_profile', 'teacher_profile')
+        
+        serializer = UserDashboardSerializer(unverified_users, many=True, context={'request': request})
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])

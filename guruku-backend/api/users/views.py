@@ -66,12 +66,12 @@ class DashboardView(APIView):
         user = request.user
         
         # 1. Data User & Joined Classes
-        user_serializer = UserDashboardSerializer(user)
+        user_serializer = UserDashboardSerializer(user, context={'request': request})
         
         # 2. Recommended Classes (Kelas yang BELUM diikuti user)
         # Ambil 5 kelas acak/terbaru yang user tidak ada di dalamnya
         recommended_classes = Class.objects.exclude(students=user).order_by('?')[:5]
-        recommended_serializer = ClassSerializer(recommended_classes, many=True)
+        recommended_serializer = ClassSerializer(recommended_classes, many=True, context={'request': request})
 
         return Response({
             "user": user_serializer.data,
@@ -83,7 +83,7 @@ class ProfileUpdateView(APIView):
     parser_classes = (MultiPartParser, FormParser) # To handle file uploads
 
     def get(self, request):
-         return Response(UserDashboardSerializer(request.user).data)
+         return Response(UserDashboardSerializer(request.user, context={'request': request}).data)
 
     def patch(self, request):
         user = request.user
@@ -91,5 +91,5 @@ class ProfileUpdateView(APIView):
         if serializer.is_valid():
             serializer.save()
             # Return updated user data similar to dashboard or login
-            return Response(UserDashboardSerializer(user).data, status=status.HTTP_200_OK)
+            return Response(UserDashboardSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

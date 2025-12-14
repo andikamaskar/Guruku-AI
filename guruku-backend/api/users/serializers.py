@@ -27,26 +27,38 @@ class UserDashboardSerializer(serializers.ModelSerializer):
     nisn = serializers.CharField(source='student_profile.nisn', read_only=True)
     grade = serializers.CharField(source='student_profile.grade', read_only=True)
     
+    # Teacher fields
+    nip = serializers.CharField(source='teacher_profile.nip', read_only=True)
+    subject = serializers.CharField(source='teacher_profile.subject', read_only=True)
+    
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'email', 'role', 'is_verified', 'joined_classes', 'profile_picture', 'nisn', 'grade']
+        fields = ['id', 'full_name', 'email', 'role', 'is_verified', 'joined_classes', 'profile_picture', 'nisn', 'grade', 'nip', 'subject']
 
     def get_profile_picture(self, obj):
         if obj.profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.profile_picture.url)
             return obj.profile_picture.url
         return None
 
 class UpdateProfileSerializer(serializers.ModelSerializer):
     nisn = serializers.CharField(write_only=True, required=False)
     grade = serializers.CharField(write_only=True, required=False)
+    
+    nip = serializers.CharField(write_only=True, required=False)
+    subject = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
-        fields = ['full_name', 'profile_picture', 'nisn', 'grade']
+        fields = ['full_name', 'profile_picture', 'nisn', 'grade', 'nip', 'subject']
 
     def update(self, instance, validated_data):
         nisn = validated_data.pop('nisn', None)
         grade = validated_data.pop('grade', None)
+        nip = validated_data.pop('nip', None)
+        subject = validated_data.pop('subject', None)
         
         instance = super().update(instance, validated_data)
         
@@ -58,6 +70,16 @@ class UpdateProfileSerializer(serializers.ModelSerializer):
                 profile.nisn = nisn
             if grade:
                 profile.grade = grade
+            profile.save()
+        
+        elif instance.role == 'teacher':
+            from .models import TeacherProfile
+            profile, created = TeacherProfile.objects.get_or_create(user=instance)
+
+            if nip:
+                profile.nip = nip
+            if subject:
+                profile.subject = subject
             profile.save()
             
         return instance

@@ -287,7 +287,7 @@ const StudentProfile: React.FC = () => {
         </View>
       </Modal>
 
-      <BottomNav activeTab="profile" />
+      <BottomNav activeTab="profile" role="student" />
     </View>
   );
 };

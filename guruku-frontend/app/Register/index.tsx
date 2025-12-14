@@ -89,8 +89,12 @@ export default function App() {
       ]);
 
     } catch (error: any) {
-      console.log(error.response?.data);
-      Alert.alert("Gagal", "Registrasi gagal. Periksa data kembali.");
+      console.log("Registration Error:", error.response?.data);
+      if (error.response?.status === 400 && error.response?.data?.email) {
+        Alert.alert("Gagal", "Email sudah terdaftar. Gunakan email lain.");
+      } else {
+        Alert.alert("Gagal", "Registrasi gagal. Periksa koneksi atau data kembali.");
+      }
     }
   };
 

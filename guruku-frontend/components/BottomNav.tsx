@@ -4,40 +4,43 @@ import { useRouter } from "expo-router";
 
 interface BottomNavProps {
   activeTab?: 'home' | 'classes' | 'quizzes' | 'profile';
+  role?: 'student' | 'teacher';
   onTabPress?: (tab: string) => void; // Optional if we want to handle custom logic
 }
 
-export default function BottomNav({ activeTab = 'home' }: BottomNavProps) {
+export default function BottomNav({ activeTab = 'home', role = 'student' }: BottomNavProps) {
   const router = useRouter();
 
   const navigateTo = (route: string) => {
     router.push(route as any);
   };
 
+  const basePath = role === 'teacher' ? '/(tabs)/teachers' : '/(tabs)/students';
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigateTo("/(tabs)/students")}>
+      <TouchableOpacity onPress={() => navigateTo(`${basePath}`)}>
         <Image
           source={require("../assets/dashboard/Home-Icon.png")}
           style={activeTab === 'home' ? styles.icon : styles.iconGray}
         />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigateTo("/(tabs)/students/classes")}>
+      <TouchableOpacity onPress={() => navigateTo(`${basePath}/classes`)}>
         <Image
           source={require("../assets/dashboard/Class-Icon.png")}
           style={activeTab === 'classes' ? styles.icon : styles.iconGray}
         />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigateTo("/(tabs)/students/quizzes")}>
+      <TouchableOpacity onPress={() => navigateTo(`${basePath}/quizzes`)}>
         <Image
           source={require("../assets/dashboard/Quizz-Icon.png")}
           style={activeTab === 'quizzes' ? styles.icon : styles.iconGray}
         />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigateTo("/(tabs)/students/profile")}>
+      <TouchableOpacity onPress={() => navigateTo(`${basePath}/profile`)}>
         <Image
           source={require("../assets/dashboard/Profile-Icon.png")}
           style={activeTab === 'profile' ? styles.icon : styles.iconGray}
