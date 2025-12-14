@@ -6,7 +6,6 @@ import API_BASE_URL from "@/config/api";
 import axios from 'axios';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-
 export default function App() {
   const router = useRouter();
 
@@ -20,6 +19,9 @@ export default function App() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [role, setRole] = useState("student");
+  
+  // PERBAIKAN 1: Menambahkan state untuk mengontrol visibilitas dropdown
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   const [showPicker, setShowPicker] = useState(false);
   const [date, setDate] = useState(new Date());
@@ -114,23 +116,6 @@ export default function App() {
 
       <View style={styles.contentBox}>
         <View style={styles.FormBox}>
-
-          {/* Role Selection */}
-          <View style={styles.roleContainer}>
-            <TouchableOpacity
-              style={[styles.roleButton, role === "student" && styles.roleButtonActive]}
-              onPress={() => setRole("student")}
-            >
-              <Text style={[styles.roleText, role === "student" && styles.roleTextActive]}>Student</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.roleButton, role === "teacher" && styles.roleButtonActive]}
-              onPress={() => setRole("teacher")}
-            >
-              <Text style={[styles.roleText, role === "teacher" && styles.roleTextActive]}>Teacher</Text>
-            </TouchableOpacity>
-          </View>
-
           <View style={styles.InputBox}>
             <Text style={styles.labelInput}>Masukan Nama Lengkap</Text>
             <TextInput
@@ -156,9 +141,52 @@ export default function App() {
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={onChangeDate}
-                maximumDate={new Date()} // tidak bisa pilih tanggal masa depan
+                maximumDate={new Date()}
               />
             )}
+          </View>
+
+          <View style={styles.InputBox}>
+            <Text style={styles.labelInput}>Role</Text>
+
+            <View style={{ position: 'relative', zIndex: 2000 }}>
+              <Pressable
+                style={styles.dropdownInput}
+                onPress={() => setShowRoleDropdown(!showRoleDropdown)}
+              >
+                <Text style={styles.dropdownText}>
+                  {role === "student" ? "Student" : "Teacher"}
+                </Text>
+                <Ionicons
+                  name={showRoleDropdown ? "chevron-up" : "chevron-down"}
+                  size={20}
+                />
+              </Pressable>
+
+              {showRoleDropdown && (
+                <View style={styles.dropdownMenu}>
+                  <Pressable
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setRole("student");
+                      setShowRoleDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>Student</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setRole("teacher");
+                      setShowRoleDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>Teacher</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
           </View>
 
           <View style={styles.InputBox}>
@@ -211,16 +239,6 @@ export default function App() {
                 style={{ width: 30, height: 30 }}
                 source={require('../../assets/images/arrow-right.png')}
               />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.InputBox}>
-            <Text style={styles.orText}> - or -</Text>
-          </View>
-
-          <View style={styles.InputBox}>
-            <TouchableOpacity style={styles.Gbutton}>
-              <Text style={styles.TextGButton}>Masuk menggunakan Google</Text>
             </TouchableOpacity>
           </View>
 
@@ -307,13 +325,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
 
-
   FooterContent: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#0B409C',
   },
-
 
   BGFooter01: {
     width: '105%',
@@ -371,6 +387,45 @@ const styles = StyleSheet.create({
     borderBottomColor: 'black',
   },
 
+  // PERBAIKAN 2: Menambahkan style untuk dropdown yang hilang
+  dropdownInput: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'black',
+    paddingVertical: 8,
+  },
+
+  dropdownText: {
+    fontSize: 16,
+    color: 'black',
+  },
+
+  dropdownMenu: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#0B409C',
+    borderRadius: 8,
+    zIndex: 999,
+    elevation: 10,
+  },
+
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#0B409C',
+    fontWeight: 'bold',
+  },
+
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -378,15 +433,11 @@ const styles = StyleSheet.create({
     borderBottomColor: 'black',
     justifyContent: 'space-between',
   },
+  
   passwordInput: {
     fontSize: 16,
     paddingVertical: 6,
     flex: 1,
-  },
-
-  forgetpassword: {
-    fontSize: 12,
-    textAlign: 'right',
   },
 
   button: {
@@ -397,50 +448,5 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-
-  orText: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 10,
-    backgroundColor: 'white',
-  },
-
-  Gbutton: {
-    backgroundColor: '#0B409C',
-    borderRadius: 8,
-    paddingVertical: 10,
-  },
-
-  TextGButton: {
-    color: 'white',
-    textAlign: 'center',
-    fontSize: 12,
-  },
-
-  roleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#0B409C',
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 5,
-    backgroundColor: 'white',
-  },
-  roleButtonActive: {
-    backgroundColor: '#0B409C',
-  },
-  roleText: {
-    color: '#0B409C',
-    fontWeight: 'bold',
-  },
-  roleTextActive: {
-    color: 'white',
   },
 });

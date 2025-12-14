@@ -106,16 +106,6 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.InputBox}>
-            <Text style={styles.orText}> - or -</Text>
-          </View>
-
-          <View style={styles.InputBox}>
-            <TouchableOpacity style={styles.Gbutton}>
-              <Text style={styles.TextGButton}>Masuk menggunakan Google</Text>
-            </TouchableOpacity>
-          </View>
-
         </View>
       </View>
 
