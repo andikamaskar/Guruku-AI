@@ -1,3 +1,5 @@
+// Lokasi: app/(tabs)/students/quizzes/index.tsx
+
 import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import {
@@ -13,8 +15,8 @@ import {
   Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import FloatingButton from "../../../../components/FloatingButton";
-import BottomNav from "../../../../components/BottomNav";
+import FloatingButton from "../../../../components/FloatingButton"; // Sesuaikan path jika perlu
+import BottomNav from "../../../../components/BottomNav"; // Sesuaikan path jika perlu
 
 // Import Service API
 import { fetchDashboardData } from "../../../../services/dashboard";
@@ -115,25 +117,20 @@ export default function KelasScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-
-      // Ambil Data User (untuk Header)
       const dashboardData = await fetchDashboardData();
       setUser(dashboardData.user);
 
-      // Ambil Daftar Kelas (Joined Classes)
-      // Kita asumsikan tab Quizzes/Activities menampilkan kelas yang sudah diikuti
       const classesData = await fetchClasses("joined");
 
-      // Mapping data dari API ke format State lokal
       const formattedClasses = classesData.map((cls: any) => ({
         id: cls.id,
-        title: cls.name, // API: name -> UI: title
+        title: cls.name,
         image: cls.image || null,
-        guru: cls.teacher_name, // API: teacher_name -> UI: guru
-        isJoined: true, // Karena fetch 'joined', pasti true
-        progress: 0, // Backend belum ada progress, default 0
-        kodeKelas: cls.invite_code, // API: invite_code -> UI: kodeKelas
-        lastAccessed: Date.now(), // Mock waktu akses agar urutan tetap jalan
+        guru: cls.teacher_name,
+        isJoined: true,
+        progress: 0,
+        kodeKelas: cls.invite_code, 
+        lastAccessed: Date.now(),
       }));
 
       setKelasList(formattedClasses);
@@ -146,21 +143,22 @@ export default function KelasScreen() {
   };
 
   const handleJoinClass = (classId: number | string) => {
-    // Fungsi ini mungkin jarang dipakai di halaman ini karena listnya sudah 'Joined'
-    // Tapi kita biarkan untuk kompatibilitas
     console.log("Join Class ID:", classId);
   };
 
+  // === PERUBAHAN UTAMA DI SINI ===
   const handleAccessClass = (classId: number | string) => {
     const selectedClass = kelasList.find((c) => c.id === classId);
 
-    // Navigasi ke Detail Kelas (Menggunakan logic yang sama dengan file sebelumnya)
     if (selectedClass) {
+      // Mengarahkan ke file ListQuiz/index.tsx
+      // Kita mengirim 'classCode' agar halaman quiz tahu kelas mana yang dibuka
       router.push({
-        pathname: "/students/classes/DetailClass",
+        pathname: "/(tabs)/students/quizzes/ListQuiz", 
         params: {
-          classId: classId,
-          className: selectedClass.title
+          classCode: selectedClass.kodeKelas,
+          className: selectedClass.title,
+          teacherName: selectedClass.guru
         }
       });
     }
@@ -178,7 +176,6 @@ export default function KelasScreen() {
     );
   });
 
-  // Sorting berdasarkan lastAccessed (jika diperlukan)
   const displayedClasses = [...filteredClasses].sort((a, b) => {
     const tA = a.lastAccessed || 0;
     const tB = b.lastAccessed || 0;
@@ -193,14 +190,13 @@ export default function KelasScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={["#005DFF", "#0B409C"]} // atas → bawah
+          colors={["#005DFF", "#0B409C"]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={styles.header}
         >
           <View style={styles.headerTop}>
             <View>
-              {/* Gunakan Data User Dinamis */}
               <Text style={styles.headerTitle}>Halo, {user?.full_name || "Student"}</Text>
               <Text style={styles.headerSubtitle}>
                 Selamat belajar kembali!
@@ -295,7 +291,6 @@ export default function KelasScreen() {
       </ScrollView>
 
       <FloatingButton />
-
       <BottomNav activeTab="quizzes" />
     </View>
   );
@@ -328,7 +323,7 @@ const styles = StyleSheet.create({
   },
   searchWrapper: {
     flexDirection: "row",
-    backgroundColor: "rgba(255, 255, 255, 0.2)", // Sedikit transparan agar lebih modern
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     borderRadius: 10,
     paddingHorizontal: 6,
     height: 46,
@@ -343,7 +338,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  // --- ACTIVITY STYLES ---
   activityCard: {
     marginHorizontal: 20,
     marginTop: 20,
@@ -377,8 +371,6 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   seeButtonText: { color: "#fff", fontWeight: "700", fontSize: 11 },
-
-  // --- Style Class Card ---
   classGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -432,14 +424,12 @@ const styles = StyleSheet.create({
   },
   classTitle: { fontSize: 13, fontWeight: "700", color: COLORS.darkText },
   classGuru: { fontSize: 11, color: "#666", marginTop: 2 },
-
   classCode: {
     fontSize: 10,
     color: COLORS.mediumText,
     marginTop: 2,
     fontStyle: "italic",
   },
-
   progressBar: {
     width: "100%",
     height: 6,
@@ -456,17 +446,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.primary,
     marginTop: 2,
-  },
-
-  joinButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  joinButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 13,
   },
 });
