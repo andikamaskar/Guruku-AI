@@ -13,13 +13,15 @@ import {
   ListRenderItem,
   ActivityIndicator,
   ImageBackground,
-  Alert
+  Alert,
+  Dimensions
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Markdown from 'react-native-markdown-display';
 import { getConversations, createConversation, sendMessage, getConversationDetail, ChatMessage } from "../../services/chatbot";
 import { fetchDashboardData } from "../../services/dashboard";
+import MathRenderer from "../../components/MathRenderer";
 
 export default function ChatBotScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -121,22 +123,52 @@ export default function ChatBotScreen() {
           </View>
         )}
 
-        <View style={[styles.bubble, isUser ? styles.userBubble : styles.botBubble]}>
-          <Markdown
-            style={{
-              body: {
-                color: isUser ? '#000' : '#000',
-                fontSize: 15,
-                lineHeight: 22
-              },
-              paragraph: {
-                marginBottom: 0,
-                marginTop: 0,
-              }
-            }}
-          >
-            {msg.content}
-          </Markdown>
+        <View style={[
+          styles.bubble,
+          isUser ? styles.userBubble : styles.botBubble,
+          /* Fix: WebView inside Flex needs explicit width, otherwise it collapses. 
+             If message has math, force bubble to be 75% of screen width. */
+          !isUser && (msg.content.includes("$$") || msg.content.includes("$")) && { width: Dimensions.get('window').width * 0.75 }
+        ]}>
+          {msg.role === "user" ? (
+            <Markdown
+              style={{
+                body: {
+                  color: isUser ? '#000' : '#000',
+                  fontSize: 15,
+                  lineHeight: 22
+                },
+                paragraph: {
+                  marginBottom: 0,
+                  marginTop: 0,
+                }
+              }}
+            >
+              {msg.content}
+            </Markdown>
+          ) : (
+            /* Bot Message: Check for Math */
+            (msg.content.includes("$$") || msg.content.includes("$")) ? (
+              <MathRenderer expression={msg.content} textColor="#000000" />
+            ) : (
+              <Markdown
+                style={{
+                  body: {
+                    color: '#000',
+                    fontSize: 15,
+                    lineHeight: 22
+                  },
+                  paragraph: {
+                    marginBottom: 0,
+                    marginTop: 0,
+                  }
+                }}
+              >
+                {msg.content}
+              </Markdown>
+            )
+          )}
+
           <Text style={[styles.timeText, isUser ? styles.userTimeText : styles.botTimeText]}>
             {time}
           </Text>

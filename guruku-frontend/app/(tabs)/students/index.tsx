@@ -21,6 +21,7 @@ import FloatingButton from "../../../components/FloatingButton";
 import BottomNav from "../../../components/BottomNav";
 import { fetchDashboardData } from "../../../services/dashboard";
 import API_BASE_URL from "../../../config/api";
+import { fetchClasses, joinClass } from "../../../services/classes";
 
 // === 1. DEFINISI TIPE DATA (INTERFACES) === //
 interface ClassItem {
@@ -132,6 +133,7 @@ export default function KelasScreen() {
   const [recommendedClasses, setRecommendedClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [allClasses, setAllClasses] = useState<any[]>([]);
 
   const handleViewAll = (tabName: 'joined' | 'suggested') => {
     router.push({
@@ -165,41 +167,45 @@ export default function KelasScreen() {
   );
 
   useEffect(() => {
-    loadDashboard();
+    loadData();
   }, []);
 
-  const loadDashboard = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await fetchDashboardData();
-      setUser(data.user);
+      // Fetch user data for header
+      const userData = await fetchDashboardData();
+      setUser(userData.user);
 
-      const joined = data.user.joined_classes.map((cls: any) => ({
-        ...cls,
-        isJoined: true,
-        progress: 0,
-        image: null,
-      }));
+      // Fetch classes
+      const joined = await fetchClasses('joined');
+      const all = await fetchClasses('all');
 
-      const recommended = data.recommended_classes.map((cls: any) => ({
-        ...cls,
-        isJoined: false,
-        progress: 0,
-        image: null,
-      }));
+      // Filter: Recommended = All matching grade (from backend) MINUS Joined
+      // Backend 'all' returns classes matching student grade.
+      // Frontend ensures we don't show classes already joined in the 'Recommended' section.
+      const joinedIds = new Set(joined.map((c: any) => c.id));
+      const recommended = all.filter((c: any) => !joinedIds.has(c.id));
 
       setJoinedClasses(joined);
       setRecommendedClasses(recommended);
+      setAllClasses(all);
     } catch (error) {
-      console.error("Failed to load dashboard:", error);
+      console.error("Failed to load dashboard data:", error);
       Alert.alert("Error", "Gagal memuat data dashboard");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoinClass = (classId: string) => {
-    alert("Fitur gabung kelas belum diimplementasikan di backend!");
+  const handleJoinClass = async (code: string) => {
+    try {
+      await joinClass(code);
+      Alert.alert("Sukses", "Berhasil bergabung ke kelas!");
+      loadData(); // Reload data
+    } catch (error) {
+      Alert.alert("Error", "Gagal bergabung ke kelas");
+    }
   };
 
   const handleAccessClass = (classId: string) => {

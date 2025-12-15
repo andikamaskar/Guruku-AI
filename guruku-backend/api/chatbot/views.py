@@ -50,8 +50,8 @@ class ChatbotMessageView(APIView):
             content=message
         )
 
-        # Ambil history chat sebelumnya
-        previous_messages = ChatMessage.objects.filter(conversation=convo).order_by('timestamp')
+        # Ambil history chat sebelumnya (kecuali pesan barusan)
+        previous_messages = ChatMessage.objects.filter(conversation=convo).exclude(id=user_msg.id).order_by('timestamp')
         history = []
         for msg in previous_messages:
             role = "user" if msg.role == "user" else "model"

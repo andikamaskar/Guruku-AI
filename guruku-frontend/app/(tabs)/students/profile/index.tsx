@@ -20,12 +20,15 @@ import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_BASE_URL from "../../../../config/api";
 
+const GRADES = ["7 SMP", "8 SMP", "9 SMP", "10 SMA", "11 SMA", "12 SMA"];
+
 const StudentProfile: React.FC = () => {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [gradeModalVisible, setGradeModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Form State
@@ -261,12 +264,14 @@ const StudentProfile: React.FC = () => {
             />
 
             <Text style={styles.label}>Kelas (Grade)</Text>
-            <TextInput
+            <TouchableOpacity
               style={styles.input}
-              value={grade}
-              onChangeText={setGrade}
-              placeholder="Contoh: 10, 11, 12"
-            />
+              onPress={() => setGradeModalVisible(true)}
+            >
+              <Text style={{ color: grade ? 'black' : '#999' }}>
+                {grade || "Pilih Jenjang Kelas"}
+              </Text>
+            </TouchableOpacity>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -283,6 +288,44 @@ const StudentProfile: React.FC = () => {
                 {saving ? <ActivityIndicator color="white" /> : <Text style={styles.btnText}>Simpan</Text>}
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Grade Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={gradeModalVisible}
+        onRequestClose={() => setGradeModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pilih Jenjang Kelas</Text>
+            <ScrollView style={{ maxHeight: 300 }}>
+              {GRADES.map((item) => (
+                <TouchableOpacity
+                  key={item}
+                  style={{
+                    paddingVertical: 15,
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#F0F0F0',
+                  }}
+                  onPress={() => {
+                    setGrade(item);
+                    setGradeModalVisible(false);
+                  }}
+                >
+                  <Text style={{ fontSize: 16, textAlign: 'center' }}>{item}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={[styles.btn, styles.btnCancel, { marginTop: 15, width: '100%' }]}
+              onPress={() => setGradeModalVisible(false)}
+            >
+              <Text style={styles.btnText}>Batal</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
