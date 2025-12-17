@@ -7,7 +7,7 @@ class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Material
         fields = ['id', 'class_obj', 'title', 'content', 'video_file', 'file', 'created_at', 'is_completed']
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'created_at', 'class_obj']
 
     def get_is_completed(self, obj):
         user = self.context['request'].user

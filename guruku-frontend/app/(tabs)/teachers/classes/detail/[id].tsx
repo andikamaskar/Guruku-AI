@@ -1,125 +1,223 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import SuccessModal from '../../../../../components/modals/SuccessModal';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, FlatList, TextInput } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { getMaterials, createMaterial, deleteMaterial, Material } from '../../../../../services/materials';
+import MaterialItem from '../../../../../components/teacher/materials/MaterialItem';
+import CreateMaterialModal from '../../../../../components/teacher/materials/CreateMaterialModal';
 
 export default function ClassDetail() {
     const router = useRouter();
-    // 'id' here corresponds to the [id] filename, which we are using as namaKelas for now
     const { id } = useLocalSearchParams();
-    const [info, setInfo] = useState("");
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('materials');
+    const [materials, setMaterials] = useState<Material[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [modalVisible, setModalVisible] = useState(false);
 
-    const handlePostingTugas = async () => {
-        if (info.trim() === '') {
-            alert('Masukkan informasi terlebih dahulu!');
-            return;
+    useEffect(() => {
+        if (activeTab === 'materials') {
+            fetchMaterials();
         }
+    }, [activeTab]);
 
-        setIsLoading(true);
-
+    const fetchMaterials = async () => {
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            setShowSuccessModal(true);
-            setInfo('');
-        } catch {
-            alert('Gagal posting informasi. Coba lagi!');
+            setLoading(true);
+            const data = await getMaterials(id as string);
+            setMaterials(data);
+        } catch (error) {
+            console.error(error);
+            Alert.alert("Error", "Gagal memuat materi");
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
-    const handleCloseModal = () => {
-        setShowSuccessModal(false);
+    const handleCreateMaterial = async (data: any) => {
+        try {
+            await createMaterial(id as string, data);
+            Alert.alert("Sukses", "Materi berhasil dibuat");
+            fetchMaterials();
+        } catch (error) {
+            console.error(error);
+            throw error; // Let modal handle error display if needed
+        }
+    };
+
+    const handleDeleteMaterial = async (materialId: string) => {
+        Alert.alert(
+            "Hapus Materi",
+            "Apakah Anda yakin ingin menghapus materi ini?",
+            [
+                { text: "Batal", style: "cancel" },
+                {
+                    text: "Hapus",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            await deleteMaterial(materialId);
+                            setMaterials(prev => prev.filter(m => m.id !== materialId));
+                        } catch (error) {
+                            Alert.alert("Error", "Gagal menghapus materi");
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     return (
-        <ScrollView style={{ flex: 1, backgroundColor: '#f9f9f9' }}>
-            <View style={{ padding: 20 }}>
-                {/* Header / Detail Section */}
-                <View style={{ backgroundColor: '#0A4D9F', padding: 15, borderRadius: 10, marginBottom: 20 }}>
-                    <Text style={{ color: '#fff', fontSize: 20, fontWeight: 'bold' }}>
-                        {id} {/* Displaying Class Name */}
-                    </Text>
-                    <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
-                        <Text style={{ color: '#E0E0E0' }}>Kode Kelas: </Text>
-                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>xbn29lk</Text>
-                    </View>
-                </View>
-
-                {/* Post Information Section */}
-                <View style={{
-                    backgroundColor: '#fff',
-                    borderWidth: 1,
-                    borderColor: '#ddd',
-                    padding: 15,
-                    borderRadius: 10,
-                    elevation: 2
-                }}>
-                    <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10, color: '#333' }}>
-                        Bagikan Informasi
-                    </Text>
-
-                    <TextInput
-                        style={styles.input}
-                        multiline
-                        placeholder="Masukkan pengumuman atau informasi untuk kelas..."
-                        value={info}
-                        onChangeText={setInfo}
-                        editable={!isLoading}
-                    />
-
-                    <TouchableOpacity
-                        style={[styles.button, isLoading && styles.buttonDisabled]}
-                        onPress={handlePostingTugas}
-                        disabled={isLoading}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.buttonText}>
-                            {isLoading ? '⏳ Posting...' : 'Posting'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Detail Kelas</Text>
+                <View style={{ width: 24 }} />
             </View>
 
-            <SuccessModal
-                visible={showSuccessModal}
-                title="Berhasil!"
-                message="Informasi telah berhasil diposting ke kelas."
-                buttonText="Tutup"
-                onClose={handleCloseModal}
-                showSecondaryButton={false}
+            {/* Tabs */}
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'info' && styles.activeTab]}
+                    onPress={() => setActiveTab('info')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'info' && styles.activeTabText]}>Informasi</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'materials' && styles.activeTab]}
+                    onPress={() => setActiveTab('materials')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'materials' && styles.activeTabText]}>Materi</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'students' && styles.activeTab]}
+                    onPress={() => setActiveTab('students')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'students' && styles.activeTabText]}>Siswa</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Content */}
+            <View style={styles.content}>
+                {activeTab === 'materials' && (
+                    <View style={{ flex: 1 }}>
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={() => setModalVisible(true)}
+                        >
+                            <Ionicons name="add" size={24} color="#fff" />
+                            <Text style={styles.addButtonText}>Tambah Materi</Text>
+                        </TouchableOpacity>
+
+                        {loading ? (
+                            <ActivityIndicator size="large" color="#0B409C" style={{ marginTop: 20 }} />
+                        ) : (
+                            <FlatList
+                                data={materials}
+                                keyExtractor={(item) => item.id}
+                                renderItem={({ item }) => (
+                                    <MaterialItem
+                                        item={item}
+                                        onDelete={handleDeleteMaterial}
+                                    // onEdit={handleEditMaterial} // Future implementation
+                                    />
+                                )}
+                                contentContainerStyle={{ paddingBottom: 20 }}
+                                ListEmptyComponent={
+                                    <Text style={styles.emptyText}>Belum ada materi di kelas ini.</Text>
+                                }
+                            />
+                        )}
+                    </View>
+                )}
+
+                {activeTab === 'info' && (
+                    <View style={{ padding: 20 }}>
+                        <Text>Informasi Kelas features coming soon...</Text>
+                    </View>
+                )}
+
+                {activeTab === 'students' && (
+                    <View style={{ padding: 20 }}>
+                        <Text>Daftar Siswa features coming soon...</Text>
+                    </View>
+                )}
+            </View>
+
+            <CreateMaterialModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                onSave={handleCreateMaterial}
             />
-        </ScrollView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    input: {
-        height: 120,
-        borderWidth: 1,
-        borderRadius: 8,
-        borderColor: '#ccc',
-        padding: 12,
-        textAlignVertical: 'top', // Android
-        fontSize: 14,
-        backgroundColor: '#FAFAFA'
+    header: {
+        backgroundColor: '#0B409C',
+        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
-    button: {
-        backgroundColor: '#0A4D9F',
-        padding: 12,
-        marginTop: 15,
-        borderRadius: 8,
-        alignItems: 'center'
+    backButton: {
+        padding: 5,
     },
-    buttonDisabled: {
-        backgroundColor: '#5C8BC0',
+    headerTitle: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
-    buttonText: {
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#fff',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E0E0E0',
+    },
+    tab: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    activeTab: {
+        borderBottomWidth: 2,
+        borderBottomColor: '#0B409C',
+        paddingBottom: 5,
+        marginBottom: -17, // Visual trick for active underline
+    },
+    tabText: {
+        fontSize: 16,
+        color: '#999',
+    },
+    activeTabText: {
+        color: '#0B409C',
+        fontWeight: 'bold',
+    },
+    content: {
+        flex: 1,
+        padding: 20,
+    },
+    addButton: {
+        backgroundColor: '#0B409C',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 20,
+    },
+    addButtonText: {
         color: '#fff',
         fontWeight: 'bold',
-        fontSize: 16
+        marginLeft: 10,
+    },
+    emptyText: {
+        textAlign: 'center',
+        color: '#999',
+        marginTop: 20,
     },
 });

@@ -50,6 +50,41 @@ model = genai.GenerativeModel(
     system_instruction=TEACHER_INSTRUCTION
 )
 
+def upload_to_gemini(path, mime_type=None):
+    """Uploads the given file to Gemini."""
+    file = genai.upload_file(path, mime_type=mime_type)
+    return file
+
+def generate_material_content(file_path, mime_type):
+    """Generates educational content from a file using Gemini."""
+    try:
+        # Upload file
+        uploaded_file = upload_to_gemini(file_path, mime_type=mime_type)
+        
+        # Create prompt
+        prompt = """
+        Analyze this educational document.
+        Create a comprehensive lesson module in Markdown format based strictly on the content of this file.
+        
+        Requirements:
+        1. **Summary**: Brief summary of the topic.
+        2. **Key Concepts**: Explain main concepts clearly.
+        3. **Equations**: If there are mathematical formulas, convert them to LaTeX format enclosed in $$ (block) or $ (inline).
+        4. **Examples**: Provide examples if available in the text.
+        5. **Quiz/Practice**: Create 3 simple practice questions based on the content.
+        
+        Format the output as clean Markdown.
+        """
+        
+        chat = model.start_chat(history=[
+            {"role": "user", "parts": [uploaded_file, prompt]}
+        ])
+        
+        response = chat.send_message("Generate the content now.")
+        return response.text
+    except Exception as e:
+        return f"Error generating content: {str(e)}"
+
 def ask_gemini(prompt: str, history: list = None) -> str:
     try:
         chat = model.start_chat(history=history or [])

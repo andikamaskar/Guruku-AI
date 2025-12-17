@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { createClass } from '../../../../../services/classes';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const GRADES = ["7 SMP", "8 SMP", "9 SMP", "10 SMA", "11 SMA", "12 SMA"];
 
@@ -41,7 +42,7 @@ export default function CreateClass() {
     };
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#fff' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
             <View style={{ padding: 20 }}>
                 <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#0B409C', marginBottom: 20 }}>
                     Buat Kelas Baru
@@ -128,7 +129,7 @@ export default function CreateClass() {
                     </View>
                 </View>
             </Modal>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -216,5 +217,7 @@ const styles = StyleSheet.create({
     modalCloseText: {
         color: 'red',
         fontWeight: 'bold',
+        fontSize: 16,
     },
 });
+
