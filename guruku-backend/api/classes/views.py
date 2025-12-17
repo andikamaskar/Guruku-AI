@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from .models import Class
-from .serializers import ClassSerializer
+from .serializers import ClassSerializer, AnnouncementSerializer
 from django.shortcuts import get_object_or_404
 
 
@@ -30,14 +30,14 @@ class ClassListCreateView(APIView):
                 # Default: joined classes
                 classes = request.user.joined_classes.all()
 
-        serializer = ClassSerializer(classes, many=True)
+        serializer = ClassSerializer(classes, many=True, context={'request': request})
         return Response(serializer.data)
 
     def post(self, request):
         if request.user.role != 'teacher':
             return Response({"error": "Hanya guru yang dapat membuat kelas."}, status=status.HTTP_403_FORBIDDEN)
 
-        serializer = ClassSerializer(data=request.data)
+        serializer = ClassSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             serializer.save(teacher=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -58,3 +58,80 @@ class ClassJoinView(APIView):
 
         class_obj.students.add(request.user)
         return Response({"message": f"Berhasil bergabung ke kelas {class_obj.name}"}, status=status.HTTP_200_OK)
+
+
+class ClassDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, pk):
+        return get_object_or_404(Class, pk=pk)
+
+    def get(self, request, pk):
+        class_obj = self.get_object(pk)
+        serializer = ClassSerializer(class_obj, context={'request': request})
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        class_obj = self.get_object(pk)
+        if class_obj.teacher != request.user:
+             return Response({"error": "Hanya guru pemilik kelas yang dapat mengedit."}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = ClassSerializer(class_obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        class_obj = self.get_object(pk)
+        if class_obj.teacher != request.user:
+             return Response({"error": "Hanya guru pemilik kelas yang dapat menghapus."}, status=status.HTTP_403_FORBIDDEN)
+        
+        class_obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ClassStudentsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        class_obj = get_object_or_404(Class, pk=pk)
+        if class_obj.teacher != request.user:
+             return Response({"error": "Hanya guru pemilik kelas yang dapat melihat daftar siswa."}, status=status.HTTP_403_FORBIDDEN)
+
+        students = class_obj.students.all()
+        data = []
+        for student in students:
+            # Construct full URL for profile picture
+            avatar_url = None
+            if student.profile_picture:
+                avatar_url = request.build_absolute_uri(student.profile_picture.url)
+            
+            data.append({
+                'id': student.id,
+                'full_name': student.full_name,
+                'email': student.email,
+                'avatar': avatar_url
+            })
+        return Response(data)
+
+
+class ClassAnnouncementListCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        class_obj = get_object_or_404(Class, pk=pk)
+        announcements = class_obj.announcements.all()
+        serializer = AnnouncementSerializer(announcements, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        class_obj = get_object_or_404(Class, pk=pk)
+        if class_obj.teacher != request.user:
+            return Response({"error": "Hanya guru pemilik kelas yang dapat membuat pengumuman."}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = AnnouncementSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(teacher=request.user, class_obj=class_obj)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

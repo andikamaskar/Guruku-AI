@@ -34,3 +34,17 @@ class Class(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.teacher.full_name}"
+
+
+class Announcement(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    class_obj = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='announcements')
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Announcement for {self.class_obj.name}"

@@ -14,4 +14,10 @@ export const setAuthToken = (token: string | null) => {
   }
 };
 
+export const getAuthHeader = async () => {
+  const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+  const token = await AsyncStorage.getItem('accessToken');
+  return token;
+};
+
 export default api;

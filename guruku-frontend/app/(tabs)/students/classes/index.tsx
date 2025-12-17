@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 // Gabungkan import dari expo-router
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import {
   View,
   Text,
@@ -127,9 +127,12 @@ export default function StudentClass() {
     }
   }, [params.initialTab]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Gunakan useFocusEffect untuk refresh data saat kembali ke layar ini
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     try {
@@ -311,7 +314,7 @@ export default function StudentClass() {
                   teacher_name={item.teacher_name}
                   invite_code={item.invite_code}
                   isJoined={activeTab === 'joined'}
-                  progress={0} // Backend doesn't have progress yet
+                  progress={item.progress || 0}
                   onJoin={handleJoinClass}
                   onPress={handleAccessClass}
                 />

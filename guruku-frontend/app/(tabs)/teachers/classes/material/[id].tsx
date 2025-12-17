@@ -9,45 +9,28 @@ import {
     StatusBar,
     Platform,
     ActivityIndicator,
-    Dimensions,
     Alert,
     Share
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Video, ResizeMode } from 'expo-av';
 import MathRenderer from '../../../../../components/MathRenderer';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { getMaterials, Material } from '../../../../../services/materials';
+import axios from 'axios';
+import { getAuthHeader } from '../../../../../services/api';
+import API_BASE_URL from '../../../../../config/api';
 
-// Ganti dengan URL API Anda
-const API_URL = 'https://digressive-unfacilely-dorla.ngrok-free.dev/api';
-const BASE_URL = 'https://digressive-unfacilely-dorla.ngrok-free.dev';
-
-interface MaterialDetail {
-    id: string;
-    title: string;
-    content: string;
-    video_file: string | null;
-    file: string | null;
-    created_at: string;
-    is_completed: boolean;
-}
-
-export default function MaterialDetailScreen() {
+export default function TeacherMaterialDetailScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const materialId = params.materialId as string;
-    const titleParam = params.title as string;
+    const materialId = params.id as string;
 
-    const [material, setMaterial] = useState<MaterialDetail | null>(null);
+    const [material, setMaterial] = useState<Material | null>(null);
     const [loading, setLoading] = useState(true);
-    const [markedAsRead, setMarkedAsRead] = useState(false);
     const videoRef = useRef(null);
-    const scrollViewRef = useRef<ScrollView>(null);
-    const { width } = Dimensions.get('window');
 
     useEffect(() => {
         fetchMaterialDetail();
@@ -56,42 +39,22 @@ export default function MaterialDetailScreen() {
     const fetchMaterialDetail = async () => {
         try {
             setLoading(true);
-            const token = await AsyncStorage.getItem('accessToken');
-            const response = await axios.get(`${API_URL}/materials/${materialId}/`, {
+            const token = await getAuthHeader();
+            // Reuse the same endpoint as list? No, we need detail. 
+            // The service list returns details, but let's fetch specific if possible or filter from list if we only have list endpoint. 
+            // Teacher's view usually uses the same API endpoint structure.
+            // Wait, services/materials.ts has getMaterials(classId) but not getMaterial(id).
+            // I'll assume we can use the backend endpoint /materials/{id}/ directly.
+
+            const response = await axios.get(`${API_BASE_URL}/materials/${materialId}/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setMaterial(response.data);
-            if (response.data.is_completed) {
-                setMarkedAsRead(true);
-            }
         } catch (error) {
             console.error("Error fetching material detail:", error);
             Alert.alert("Error", "Gagal memuat materi.");
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleScroll = (event: any) => {
-        if (markedAsRead) return;
-
-        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-        const paddingToBottom = 20;
-        if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
-            markAsComplete();
-        }
-    };
-
-    const markAsComplete = async () => {
-        try {
-            const token = await AsyncStorage.getItem('accessToken');
-            await axios.post(`${API_URL}/materials/${materialId}/complete/`, {}, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setMarkedAsRead(true);
-            // Optional: Show toast or small indicator
-        } catch (error) {
-            console.error("Error marking as complete:", error);
         }
     };
 
@@ -129,7 +92,7 @@ export default function MaterialDetailScreen() {
 
     const getVideoUri = (path: string) => {
         if (path.startsWith('http')) return path;
-        return `${BASE_URL}${path}`;
+        return `${API_BASE_URL.replace('/api', '')}${path}`;
     };
 
     return (
@@ -144,7 +107,7 @@ export default function MaterialDetailScreen() {
                     </View>
                 </TouchableOpacity>
                 <Text style={styles.headerTitle} numberOfLines={1}>
-                    {titleParam || "Materi"}
+                    Detail Materi
                 </Text>
                 <TouchableOpacity onPress={handleExportPDF} style={styles.pdfButton}>
                     <Ionicons name="document-text-outline" size={24} color="white" />
@@ -157,11 +120,8 @@ export default function MaterialDetailScreen() {
                 </View>
             ) : material ? (
                 <ScrollView
-                    ref={scrollViewRef}
                     style={styles.contentContainer}
                     contentContainerStyle={styles.scrollContent}
-                    onScroll={handleScroll}
-                    scrollEventThrottle={400}
                 >
                     <Text style={styles.title}>{material.title}</Text>
                     <Text style={styles.date}>
@@ -175,7 +135,7 @@ export default function MaterialDetailScreen() {
                             <Video
                                 ref={videoRef}
                                 style={styles.video}
-                                source={{ uri: getVideoUri(material.video_file) }}
+                                source={{ uri: getVideoUri(material.video_file as string) }}
                                 useNativeControls
                                 resizeMode={ResizeMode.CONTAIN}
                                 isLooping={false}
@@ -183,20 +143,9 @@ export default function MaterialDetailScreen() {
                         </View>
                     )}
 
-                    <View style={styles.htmlContainer}>
+                    <View style={styles.markdownContainer}>
                         <MathRenderer expression={material.content} />
                     </View>
-
-                    {markedAsRead ? (
-                        <View style={styles.completedBadge}>
-                            <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                            <Text style={styles.completedText}>Sudah Dibaca</Text>
-                        </View>
-                    ) : (
-                        <TouchableOpacity style={styles.markReadButton} onPress={markAsComplete}>
-                            <Text style={styles.markReadButtonText}>Tandai Sudah Dibaca</Text>
-                        </TouchableOpacity>
-                    )}
 
                     <View style={{ height: 50 }} />
                 </ScrollView>
@@ -218,16 +167,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         flexDirection: 'row',
         alignItems: 'center',
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
         elevation: 5,
     },
     backButtonTouchable: { marginRight: 15 },
     backButton: {
         padding: 5,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.3)',
-        borderRadius: 8,
     },
     headerTitle: {
         color: '#FFFFFF',
@@ -264,37 +208,8 @@ const styles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
-    htmlContainer: {
+    markdownContainer: {
         marginBottom: 20,
     },
-    completedBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#4ADE80',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 25,
-        alignSelf: 'center',
-        marginTop: 20,
-    },
-    completedText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        marginLeft: 8,
-    },
     errorText: { color: 'red', fontSize: 16 },
-    markReadButton: {
-        backgroundColor: '#E0E0E0',
-        paddingVertical: 12,
-        paddingHorizontal: 25,
-        borderRadius: 25,
-        alignSelf: 'center',
-        marginTop: 20,
-    },
-    markReadButtonText: {
-        color: '#555',
-        fontWeight: 'bold',
-        fontSize: 14,
-    },
 });
