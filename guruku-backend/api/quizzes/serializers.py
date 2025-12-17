@@ -1,23 +1,35 @@
 from rest_framework import serializers
 from django.db import transaction
-from .models import Quiz, Question, Choice, QuizAttempt, UserAnswer
+from .models import Quiz, Question, QuizAttempt, UserAnswer
 from api.classes.models import Class
 
-class ChoiceAdminSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Choice
-        fields = ['id', 'text', 'is_correct']
-
 class QuestionAdminSerializer(serializers.ModelSerializer):
-    choices = ChoiceAdminSerializer(many=True)
+    options = serializers.ListField(
+        child=serializers.CharField(), 
+        min_length=2, 
+        help_text="Masukkan minimal 2 pilihan"
+    )
 
     class Meta:
         model = Question
-        fields = ['id', 'text', 'order', 'points', 'choices']
+        fields = ['id', 'text', 'order', 'points', 'options', 'answer']
+
+    def validate(self, data):
+        """Validasi: Kunci jawaban harus ada di dalam daftar options"""
+        options = data.get('options', [])
+        answer = data.get('answer', '')
+        
+        if answer not in options:
+            raise serializers.ValidationError(
+                f"Jawaban '{answer}' tidak ditemukan di dalam pilihan options yang tersedia."
+            )
+        return data
 
 class QuizAdminSerializer(serializers.ModelSerializer):
     questions = QuestionAdminSerializer(many=True)
-    class_id = serializers.PrimaryKeyRelatedField(queryset=Class.objects.all(), source='class_obj', write_only=True)
+    class_id = serializers.PrimaryKeyRelatedField(
+        queryset=Class.objects.all(), source='class_obj', write_only=True
+    )
     class_name = serializers.CharField(source='class_obj.name', read_only=True)
     created_by_name = serializers.CharField(source='created_by.username', read_only=True)
 
@@ -39,13 +51,9 @@ class QuizAdminSerializer(serializers.ModelSerializer):
         
         with transaction.atomic():
             quiz = Quiz.objects.create(created_by=user, **validated_data)
-
             for q_data in questions_data:
-                choices_data = q_data.pop('choices')
-                question = Question.objects.create(quiz=quiz, **q_data)
-                for c_data in choices_data:
-                    Choice.objects.create(question=question, **c_data)
-
+                Question.objects.create(quiz=quiz, **q_data)
+            
             quiz.total_questions = quiz.questions.count()
             quiz.save()
             
@@ -57,35 +65,24 @@ class QuizAdminSerializer(serializers.ModelSerializer):
         instance.duration_minutes = validated_data.get('duration_minutes', instance.duration_minutes)
         instance.deadline = validated_data.get('deadline', instance.deadline)
         instance.is_active = validated_data.get('is_active', instance.is_active)
-        instance.class_obj = validated_data.get('class_obj', instance.class_obj)
         instance.save()
+        
         if 'questions' in validated_data:
             questions_data = validated_data.pop('questions')
             with transaction.atomic():
                 instance.questions.all().delete()
-                
                 for q_data in questions_data:
-                    choices_data = q_data.pop('choices')
-                    question = Question.objects.create(quiz=instance, **q_data)
-                    
-                    for c_data in choices_data:
-                        Choice.objects.create(question=question, **c_data)
+                    Question.objects.create(quiz=instance, **q_data)
                 
                 instance.total_questions = instance.questions.count()
                 instance.save()
                 
         return instance
 
-class ChoiceStudentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Choice
-        fields = ['id', 'text'] 
-
 class QuestionStudentSerializer(serializers.ModelSerializer):
-    choices = ChoiceStudentSerializer(many=True, read_only=True)
     class Meta:
         model = Question
-        fields = ['id', 'text', 'order', 'points', 'choices']
+        fields = ['id', 'text', 'order', 'points', 'options']
 
 class QuizDetailSerializer(serializers.ModelSerializer):
     questions = QuestionStudentSerializer(many=True, read_only=True)
@@ -93,11 +90,7 @@ class QuizDetailSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Quiz
-        fields = [
-            'id', 'title', 'description', 
-            'class_name', 'duration_minutes', 
-            'deadline', 'questions'
-        ]
+        fields = ['id', 'title', 'description', 'class_name', 'duration_minutes', 'deadline', 'questions']
 
 class QuizAttemptSerializer(serializers.ModelSerializer):
     answers = serializers.ListField(write_only=True)
@@ -112,7 +105,8 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         answers_data = validated_data.pop('answers')
         user = self.context['request'].user
-        quiz = validated_data.get('quiz') 
+        quiz = validated_data.get('quiz')
+        
         total_score = 0
         
         with transaction.atomic():
@@ -120,22 +114,21 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
             
             for item in answers_data:
                 q_id = item.get('question_id')
-                c_id = item.get('choice_id')
+                user_ans_text = item.get('answer_text')
+                
                 try:
                     question_obj = Question.objects.get(id=q_id, quiz=quiz)
-                    choice_obj = Choice.objects.get(id=c_id, question=question_obj)
-                    
+
                     UserAnswer.objects.create(
                         attempt=attempt,
                         question=question_obj,
-                        selected_choice=choice_obj
+                        answer_text=user_ans_text
                     )
-                
-                    if choice_obj.is_correct:
+                    if str(user_ans_text).strip() == str(question_obj.answer).strip():
                         total_score += question_obj.points
                         
-                except (Question.DoesNotExist, Choice.DoesNotExist):
-                    continue 
+                except Question.DoesNotExist:
+                    continue
 
             attempt.score = total_score
             attempt.save()

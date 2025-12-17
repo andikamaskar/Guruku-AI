@@ -1,8 +1,8 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import Quiz, QuizAttempt
-from .serializers import QuizAdminSerializer, QuizDetailSerializer, QuizAttemptSerializer
+from .models import Quiz, QuizAttempt 
+from .serializers import (QuizAdminSerializer, QuizDetailSerializer, QuizAttemptSerializer)
 
 class IsTeacherOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -10,7 +10,6 @@ class IsTeacherOrAdmin(permissions.BasePermission):
             return False
         
         user_role = getattr(request.user, 'role', None)
-
         if user_role in ['admin', 'teacher']:
             return True
         
@@ -26,7 +25,6 @@ class QuizManageViewSet(viewsets.ModelViewSet):
 
         if user_role == 'admin' or user.is_superuser:
             return Quiz.objects.all()
-        
         elif user_role == 'teacher':
             return Quiz.objects.filter(created_by=user)
             
@@ -54,11 +52,9 @@ class QuizStudentViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=['get'])
     def history(self, request):
         attempts = QuizAttempt.objects.filter(user=request.user).order_by('-submitted_at')
-
         data = [{
             "quiz_title": a.quiz.title,
             "score": a.score,
             "submitted_at": a.submitted_at
         } for a in attempts]
-        
         return Response(data)

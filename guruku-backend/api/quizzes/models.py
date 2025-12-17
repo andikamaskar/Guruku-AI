@@ -30,23 +30,16 @@ class Question(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField(help_text="Pertanyaan")
-    order = models.PositiveIntegerField(default=0, help_text="Urutan soal")
-    points = models.FloatField(default=1.0, help_text="Bobot nilai jika benar")
+    order = models.PositiveIntegerField(default=0)
+    points = models.FloatField(default=1.0)
+    options = models.JSONField(help_text="List pilihan jawaban") 
+    answer = models.CharField(max_length=255, help_text="Kunci Jawaban (String)")
 
     class Meta:
         ordering = ['order']
     
     def __str__(self):
         return f"[{self.quiz.title}] {self.text[:30]}..."
-
-class Choice(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='choices')
-    text = models.CharField(max_length=255, help_text="Pilihan Jawaban")
-    is_correct = models.BooleanField(default=False, help_text="Centang jika ini jawaban benar")
-
-    def __str__(self):
-        return f"{self.text} ({'Benar' if self.is_correct else 'Salah'})"
 
 class QuizAttempt(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -59,6 +52,7 @@ class QuizAttempt(models.Model):
         return f"{self.user} - {self.quiz.title} - Score: {self.score}"
 
 class UserAnswer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    selected_choice = models.ForeignKey(Choice, on_delete=models.CASCADE)
+    answer_text = models.CharField(max_length=255, help_text="Jawaban yang dipilih siswa")
