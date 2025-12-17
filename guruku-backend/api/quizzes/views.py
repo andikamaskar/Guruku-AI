@@ -1,38 +1,64 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.decorators import action
+from .models import Quiz, QuizAttempt
+from .serializers import QuizAdminSerializer, QuizDetailSerializer, QuizAttemptSerializer
 
-from .models import Quiz
-from .serializers import QuizSerializer
+class IsTeacherOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        
+        user_role = getattr(request.user, 'role', None)
 
+        if user_role in ['admin', 'teacher']:
+            return True
+        
+        return False
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def quiz_list(request):
-    """
-    Mengembalikan daftar semua quiz aktif.
-    Bisa ditambah filter jika perlu (misal berdasarkan kelas).
-    """
-    quizzes = Quiz.objects.filter(is_active=True)
-    serializer = QuizSerializer(quizzes, many=True)
-    return Response(serializer.data)
+class QuizManageViewSet(viewsets.ModelViewSet):
+    serializer_class = QuizAdminSerializer
+    permission_classes = [IsTeacherOrAdmin]
 
+    def get_queryset(self):
+        user = self.request.user
+        user_role = getattr(user, 'role', None)
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def quiz_detail_by_exam_id(request, exam_id):
-    """
-    Mengembalikan detail meta quiz berdasarkan exam_id.
-    Respons sesuai format yang diminta frontend.
-    """
-    try:
-        quiz = Quiz.objects.get(exam_id=exam_id, is_active=True)
-    except Quiz.DoesNotExist:
-        return Response(
-            {"detail": "Quiz tidak ditemukan."},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        if user_role == 'admin' or user.is_superuser:
+            return Quiz.objects.all()
+        
+        elif user_role == 'teacher':
+            return Quiz.objects.filter(created_by=user)
+            
+        return Quiz.objects.none()
 
-    serializer = QuizSerializer(quiz)
-    return Response(serializer.data)
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+class QuizStudentViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Quiz.objects.filter(is_active=True)
+    serializer_class = QuizDetailSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=True, methods=['post'], serializer_class=QuizAttemptSerializer)
+    def submit(self, request, pk=None):
+        quiz = self.get_object()
+        serializer = QuizAttemptSerializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            serializer.save(quiz=quiz)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        attempts = QuizAttempt.objects.filter(user=request.user).order_by('-submitted_at')
+
+        data = [{
+            "quiz_title": a.quiz.title,
+            "score": a.score,
+            "submitted_at": a.submitted_at
+        } for a in attempts]
+        
+        return Response(data)

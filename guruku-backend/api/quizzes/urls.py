@@ -1,8 +1,13 @@
-from django.urls import path
-from .views import quiz_list, quiz_detail_by_exam_id
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import views
+
+router = DefaultRouter()
+
+router.register(r'manage', views.QuizManageViewSet, basename='quiz-manage')
+
+router.register(r'exam', views.QuizStudentViewSet, basename='quiz-student')
 
 urlpatterns = [
-    path('', quiz_list, name='quiz-list'),                    # GET /api/quizzes/
-    path('<str:exam_id>/', quiz_detail_by_exam_id,            # GET /api/quizzes/CODE_PY1/
-         name='quiz-detail-exam'),
+    path('', include(router.urls)),
 ]
