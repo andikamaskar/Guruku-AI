@@ -50,11 +50,14 @@ class QuizAdminSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         
         with transaction.atomic():
-            quiz = Quiz.objects.create(created_by=user, **validated_data)
+            quiz = Quiz.objects.create(**validated_data)
             for q_data in questions_data:
                 Question.objects.create(quiz=quiz, **q_data)
             
             quiz.total_questions = quiz.questions.count()
+            # Hitung max_score dari total points pertanyaan
+            total_points = sum(q.points for q in quiz.questions.all())
+            quiz.max_score = total_points
             quiz.save()
             
         return quiz
@@ -75,6 +78,9 @@ class QuizAdminSerializer(serializers.ModelSerializer):
                     Question.objects.create(quiz=instance, **q_data)
                 
                 instance.total_questions = instance.questions.count()
+                # Recalculate max_score
+                total_points = sum(q.points for q in instance.questions.all())
+                instance.max_score = total_points
                 instance.save()
                 
         return instance

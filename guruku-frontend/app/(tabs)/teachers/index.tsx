@@ -169,13 +169,26 @@ export default function TeacherDashboard() {
 
             <TouchableOpacity
               style={styles.actionCard}
-              // onPress={() => router.push('/(tabs)/teachers/assignments')} // Future feature
+              onPress={() => router.push('/(tabs)/teachers/quizzes/create')}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: '#F3E5F5' }]}>
+                <Ionicons name="create-outline" size={24} color="#8E24AA" />
+              </View>
+              <Text style={styles.actionText}>Buat Kuis</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.actionGrid}>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/(tabs)/teachers/quizzes')}
               activeOpacity={0.8}
             >
               <View style={[styles.iconCircle, { backgroundColor: '#FFF3E0' }]}>
-                <Ionicons name="document-text-outline" size={24} color="#EF6C00" />
+                <Ionicons name="list-outline" size={24} color="#EF6C00" />
               </View>
-              <Text style={styles.actionText}>Tugas</Text>
+              <Text style={styles.actionText}>List Kuis</Text>
             </TouchableOpacity>
           </View>
 
