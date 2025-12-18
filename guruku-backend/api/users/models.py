@@ -94,3 +94,19 @@ def save_user_profile(sender, instance, **kwargs):
         instance.student_profile.save()
     elif instance.role == 'teacher' and hasattr(instance, 'teacher_profile'):
         instance.teacher_profile.save()
+
+class SystemAnnouncement(models.Model):
+    TARGET_CHOICES = (
+        ('all', 'Semua User'),
+        ('student', 'Hanya Siswa'),
+        ('teacher', 'Hanya Guru'),
+    )
+
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    target_role = models.CharField(max_length=20, choices=TARGET_CHOICES, default='all')
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"[{self.target_role}] {self.title}"

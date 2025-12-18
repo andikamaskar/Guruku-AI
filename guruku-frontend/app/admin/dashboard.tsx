@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Image, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Image, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { fetchAdminStats, fetchVerificationRequests, verifyUser } from '../../services/admin';
@@ -12,6 +12,7 @@ export default function AdminDashboard() {
     const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+
     const [selectedUser, setSelectedUser] = useState<any>(null);
 
     const loadData = async () => {
@@ -53,6 +54,33 @@ export default function AdminDashboard() {
         router.replace('/Login');
     }
 
+    const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+    const [announcementForm, setAnnouncementForm] = useState({ title: '', content: '', target_role: 'all' });
+
+    const handleCreateAnnouncement = async () => {
+        try {
+            const token = await AsyncStorage.getItem('accessToken');
+            const response = await fetch(`${API_BASE_URL}/users/announcements/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(announcementForm)
+            });
+
+            if (response.ok) {
+                Alert.alert("Sukses", "Pengumuman berhasil dibuat");
+                setShowAnnouncementModal(false);
+                setAnnouncementForm({ title: '', content: '', target_role: 'all' });
+            } else {
+                Alert.alert("Error", "Gagal membuat pengumuman");
+            }
+        } catch (error) {
+            Alert.alert("Error", "Terjadi kesalahan koneksi");
+        }
+    };
+
     return (
         <View style={styles.container}>
             {/* Header */}
@@ -67,6 +95,14 @@ export default function AdminDashboard() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} />}
                 contentContainerStyle={{ padding: 20 }}
             >
+                {/* Action Buttons */}
+                <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => setShowAnnouncementModal(true)}
+                >
+                    <Text style={styles.actionButtonText}>+ Buat Pengumuman Sistem</Text>
+                </TouchableOpacity>
+
                 {/* Stats Cards */}
                 <View style={styles.statsGrid}>
                     <View style={styles.statCard}>
@@ -127,6 +163,57 @@ export default function AdminDashboard() {
                 )}
 
             </ScrollView>
+
+            {/* Announcement Modal */}
+            <Modal visible={showAnnouncementModal} transparent animationType="slide" onRequestClose={() => setShowAnnouncementModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Buat Pengumuman</Text>
+
+                        <Text style={styles.label}>Judul</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={announcementForm.title}
+                            onChangeText={(text) => setAnnouncementForm({ ...announcementForm, title: text })}
+                        />
+
+                        <Text style={styles.label}>Konten</Text>
+                        <TextInput
+                            style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+                            multiline
+                            value={announcementForm.content}
+                            onChangeText={(text) => setAnnouncementForm({ ...announcementForm, content: text })}
+                        />
+
+                        <Text style={styles.label}>Target</Text>
+                        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
+                            {['all', 'teacher', 'student'].map((role) => (
+                                <TouchableOpacity
+                                    key={role}
+                                    style={[
+                                        styles.roleBadge,
+                                        announcementForm.target_role === role && styles.roleBadgeActive
+                                    ]}
+                                    onPress={() => setAnnouncementForm({ ...announcementForm, target_role: role })}
+                                >
+                                    <Text style={{ color: announcementForm.target_role === role ? 'white' : '#666' }}>
+                                        {role === 'all' ? 'Semua' : role === 'teacher' ? 'Guru' : 'Siswa'}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity style={[styles.btn, styles.cancelBtn]} onPress={() => setShowAnnouncementModal(false)}>
+                                <Text style={{ color: 'black' }}>Batal</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.btn, styles.confirmBtn]} onPress={handleCreateAnnouncement}>
+                                <Text style={{ color: 'white', fontWeight: 'bold' }}>Kirim</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             {/* User Detail Modal */}
             <Modal visible={!!selectedUser} transparent animationType="fade" onRequestClose={() => setSelectedUser(null)}>
@@ -189,6 +276,17 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f4f4f4' },
     header: { padding: 20, paddingTop: 50, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     headerTitle: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+
+    actionButton: {
+        backgroundColor: '#4CAF50',
+        padding: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 20,
+        elevation: 3
+    },
+    actionButtonText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 },
     statCard: { width: '48%', backgroundColor: 'white', padding: 15, borderRadius: 10, marginBottom: 15, elevation: 2, alignItems: 'center' },
     statValue: { fontSize: 24, fontWeight: 'bold', color: '#333' },
@@ -206,10 +304,30 @@ const styles = StyleSheet.create({
     modalContent: { width: '85%', backgroundColor: 'white', borderRadius: 10, padding: 20, alignItems: 'center' },
     modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
     modalAvatar: { width: 80, height: 80, borderRadius: 40, marginBottom: 15 },
-    label: { fontSize: 12, color: '#888', marginTop: 5 },
-    value: { fontSize: 16, fontWeight: '500', marginBottom: 5 },
+    label: { fontSize: 12, color: '#888', marginTop: 5, alignSelf: 'flex-start' },
+    value: { fontSize: 16, fontWeight: '500', marginBottom: 5, alignSelf: 'flex-start' },
     modalActions: { flexDirection: 'row', width: '100%', justifyContent: 'space-between', marginTop: 20 },
     btn: { flex: 1, padding: 12, borderRadius: 5, alignItems: 'center', marginHorizontal: 5 },
     cancelBtn: { backgroundColor: '#eee' },
     confirmBtn: { backgroundColor: '#4CAF50' },
+
+    // Input styles
+    input: {
+        width: '100%',
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#ddd'
+    },
+    roleBadge: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        backgroundColor: '#eee',
+    },
+    roleBadgeActive: {
+        backgroundColor: '#0B409C',
+    }
 });

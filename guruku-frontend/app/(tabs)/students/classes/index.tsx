@@ -30,79 +30,7 @@ const COLORS = {
   bg: "#F5F6FA",
 };
 
-// === CLASS CARD === //
-interface ClassCardProps {
-  id: string;
-  name: string;
-  teacher_name: string;
-  invite_code: string;
-  isJoined: boolean;
-  progress?: number;
-  onJoin: (code: string) => void;
-  onPress: (id: string) => void;
-}
-
-function ClassCard({
-  id,
-  name,
-  teacher_name,
-  invite_code,
-  isJoined,
-  progress = 0,
-  onJoin,
-  onPress,
-}: ClassCardProps) {
-  return (
-    <View style={styles.classCardContent}>
-      <LinearGradient
-        colors={["#0B409C", "#0A2D69"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.imageWrapper}
-      >
-        <View style={styles.emptyClassImage}>
-          <Text style={{ color: COLORS.mediumText, fontSize: 10 }}>
-            {invite_code}
-          </Text>
-        </View>
-      </LinearGradient>
-
-      <View style={styles.textWrapper}>
-        <View>
-          <Text style={styles.classTitle} numberOfLines={2}>
-            {name}
-          </Text>
-          <Text style={styles.classGuru}>{teacher_name}</Text>
-          <Text style={styles.classCode}>{invite_code}</Text>
-        </View>
-
-        {isJoined ? (
-          <View>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progress}%` },
-                  { backgroundColor: COLORS.primary },
-                ]}
-              />
-            </View>
-            <Text style={[styles.progressText, { color: COLORS.primary }]}>
-              {progress}% Progress
-            </Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.joinButton}
-            onPress={() => onJoin(invite_code)}
-          >
-            <Text style={styles.joinButtonText}>Gabung</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-}
+import ClassCard from "../../../../components/ClassCard";
 
 export default function StudentClass() {
   const router = useRouter();
@@ -310,13 +238,12 @@ export default function StudentClass() {
               >
                 <ClassCard
                   id={item.id}
-                  name={item.name}
-                  teacher_name={item.teacher_name}
-                  invite_code={item.invite_code}
+                  title={item.name}
+                  guru={item.teacher_name}
+                  kodeKelas={item.invite_code}
                   isJoined={activeTab === 'joined'}
                   progress={item.progress || 0}
-                  onJoin={handleJoinClass}
-                  onPress={handleAccessClass}
+                  onJoin={() => handleJoinClass(item.invite_code)}
                 />
               </TouchableOpacity>
             ))
@@ -413,82 +340,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   cardWrapperTouchable: {
-    width: "47%",
+    width: "48%",
     marginBottom: 20,
-  },
-  classCardContent: {
-    borderRadius: 15,
-    padding: 0,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 10,
-    minHeight: 260,
-    overflow: "hidden",
-  },
-  imageWrapper: {
-    width: "100%",
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 0,
-    padding: 5,
-  },
-  emptyClassImage: {
-    width: "90%",
-    height: 110,
-    borderRadius: 10,
-    backgroundColor: COLORS.lightGray,
-    marginBottom: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textWrapper: {
-    flex: 1,
-    justifyContent: "space-between",
-    marginTop: 10,
-    marginHorizontal: 12,
-    paddingBottom: 10,
-  },
-  classTitle: { fontSize: 13, fontWeight: "700", color: COLORS.darkText },
-  classGuru: { fontSize: 11, color: "#666", marginTop: 2 },
-  classCode: {
-    fontSize: 10,
-    color: COLORS.mediumText,
-    marginTop: 2,
-    fontStyle: "italic",
-  },
-  progressBar: {
-    width: "100%",
-    height: 6,
-    backgroundColor: "#ddd",
-    borderRadius: 5,
-    marginTop: 8,
-  },
-  progressFill: {
-    height: 6,
-    backgroundColor: COLORS.primary,
-    borderRadius: 5,
-  },
-  progressText: {
-    fontSize: 11,
-    color: COLORS.primary,
-    marginTop: 2,
-  },
-  joinButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  joinButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 13,
   },
 });

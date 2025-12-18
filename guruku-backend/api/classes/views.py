@@ -96,8 +96,13 @@ class ClassStudentsView(APIView):
 
     def get(self, request, pk):
         class_obj = get_object_or_404(Class, pk=pk)
-        if class_obj.teacher != request.user:
-             return Response({"error": "Hanya guru pemilik kelas yang dapat melihat daftar siswa."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Allow Teacher (Owner) OR Student (Member)
+        is_teacher = class_obj.teacher == request.user
+        is_student = class_obj.students.filter(id=request.user.id).exists()
+
+        if not (is_teacher or is_student):
+             return Response({"error": "Anda tidak memiliki akses ke kelas ini."}, status=status.HTTP_403_FORBIDDEN)
 
         students = class_obj.students.all()
         data = []

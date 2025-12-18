@@ -1,6 +1,11 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, SystemAnnouncement
 from api.classes.serializers import ClassSerializer
+
+class SystemAnnouncementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemAnnouncement
+        fields = ['id', 'title', 'content', 'created_at', 'target_role']
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:

@@ -57,74 +57,9 @@ const COLORS = {
 };
 
 // === KOMPONEN CLASS CARD === //
-const ClassCard: React.FC<ClassCardProps> = ({
-  id,
-  title,
-  guru,
-  image,
-  isJoined,
-  progress,
-  onJoin,
-  kodeKelas,
-}) => {
-  return (
-    <View style={styles.classCardContent}>
-      <LinearGradient
-        colors={["#0B409C", "#0A2D69"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.imageWrapper}
-      >
-        <View style={styles.emptyClassImage}>
-          {image ? (
-            <Image source={image} style={styles.cardImageActual} />
-          ) : (
-            <Text style={{ color: COLORS.mediumText, fontSize: 10 }}>
-              {kodeKelas}
-            </Text>
-          )}
-        </View>
-      </LinearGradient>
+import Ionicons from "@expo/vector-icons/Ionicons";
 
-      <View style={styles.textWrapper}>
-        <View>
-          <Text style={styles.classTitle} numberOfLines={2}>
-            {title}
-          </Text>
-          <Text style={styles.classGuru}>{guru}</Text>
-          <Text style={styles.classCode}>{kodeKelas}</Text>
-        </View>
-
-        {isJoined ? (
-          <View>
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progress}%` as any },
-                  { backgroundColor: COLORS.primary },
-                ]}
-              />
-            </View>
-            <Text style={[styles.progressText, { color: COLORS.primary }]}>
-              {progress}% Progress
-            </Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.joinButton}
-            onPress={(e: GestureResponderEvent) => {
-              e.stopPropagation();
-              onJoin(id);
-            }}
-          >
-            <Text style={styles.joinButtonText}>Gabung Sekarang</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-};
+import ClassCard from "../../../components/ClassCard";
 
 // === SCREEN UTAMA === //
 export default function KelasScreen() {
@@ -291,7 +226,7 @@ export default function KelasScreen() {
               <Text style={styles.activitySubtitle}>
                 Cek progres kelas tugas kamu disini
               </Text>
-              <TouchableOpacity style={styles.seeButton}>
+              <TouchableOpacity style={styles.seeButton} onPress={() => router.push('/(tabs)/students/activities')}>
                 <Text style={styles.seeButtonText}>Lihat &gt;</Text>
               </TouchableOpacity>
             </View>
@@ -502,83 +437,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   cardWrapperTouchable: {
-    width: "47%",
+    width: "48%", // Slightly wider for better fill
     marginBottom: 20,
-  },
-  classCardContent: {
-    borderRadius: 15,
-    padding: 0,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 10,
-    minHeight: 260,
-    overflow: "hidden",
-  },
-  imageWrapper: {
-    width: "100%",
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    borderBottomLeftRadius: 10,
-    borderBottomRightRadius: 0,
-    padding: 5,
-  },
-  emptyClassImage: {
-    width: "90%",
-    height: 110,
-    borderRadius: 10,
-    backgroundColor: COLORS.lightGray,
-    marginBottom: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardImageActual: { width: "100%", height: "100%", borderRadius: 10 },
-  textWrapper: {
-    flex: 1,
-    justifyContent: "space-between",
-    marginTop: 10,
-    marginHorizontal: 12,
-    paddingBottom: 10,
-  },
-  classTitle: { fontSize: 13, fontWeight: "700", color: COLORS.darkText },
-  classGuru: { fontSize: 11, color: "#666", marginTop: 2 },
-  classCode: {
-    fontSize: 10,
-    color: COLORS.mediumText,
-    marginTop: 2,
-    fontStyle: "italic",
-  },
-  progressBar: {
-    width: "100%",
-    height: 6,
-    backgroundColor: "#ddd",
-    borderRadius: 5,
-    marginTop: 8,
-  },
-  progressFill: {
-    height: 6,
-    backgroundColor: COLORS.primary,
-    borderRadius: 5,
-  },
-  progressText: {
-    fontSize: 11,
-    color: COLORS.primary,
-    marginTop: 2,
-  },
-  joinButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  joinButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 13,
   },
 });

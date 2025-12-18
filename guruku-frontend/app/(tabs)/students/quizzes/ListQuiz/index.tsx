@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import API_BASE_URL from '@/config/api';
 import axios from 'axios';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import QuizGameScreen, { ResultData } from './HalamanQuizz/index';
 
@@ -94,7 +95,10 @@ export default function ListQuizScreen() {
 
       // Mapping data dari format Database (Snake Case) ke format UI Aplikasi
       // Lihat gambar database Anda: title, description, total_questions, dll.
-      const formattedData: QuizData[] = response.data.map((item: any) => ({
+      // Handle pagination (results array) or direct array
+      const rawData = Array.isArray(response.data) ? response.data : (response.data.results || []);
+
+      const formattedData: QuizData[] = rawData.map((item: any) => ({
         exam_id: item.exam_id,
         exam_title: item.title,               // Kolom DB: title
         rules: item.description || "Kerjakan dengan jujur.", // Kolom DB: description
@@ -208,26 +212,40 @@ export default function ListQuizScreen() {
   // === SCREEN 1: HOME (List Quiz) ===
   if (screen === 'home') {
     const renderQuizItem: ListRenderItem<QuizData> = ({ item }) => (
-      <TouchableOpacity style={styles.quizCard} onPress={() => handleSelectQuiz(item)}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>{item.exam_title}</Text>
-          <Text style={{ color: '#666', fontSize: 12, marginTop: 4 }} numberOfLines={1}>{item.rules}</Text>
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-            <View style={styles.badgeContainer}>
-              <Ionicons name="time-outline" size={12} color="#0056b3" />
-              <Text style={styles.badgeText}>{item.duration_minutes} mnt</Text>
+      <TouchableOpacity
+        style={styles.quizCard}
+        onPress={() => handleSelectQuiz(item)}
+        activeOpacity={0.9}
+      >
+        <LinearGradient
+          colors={['#ffffff', '#f8faff']}
+          style={styles.quizCardGradient}
+        >
+          <View style={styles.quizCardLeft}>
+            <View style={[styles.iconBox, { backgroundColor: '#e3f2fd' }]}>
+              <Ionicons name="school" size={24} color="#0056b3" />
             </View>
-            <View style={styles.badgeContainer}>
-              <Ionicons name="document-text-outline" size={12} color="#0056b3" />
-              <Text style={styles.badgeText}>{item.total_questions_to_display} Soal</Text>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.cardTitle} numberOfLines={1}>{item.exam_title}</Text>
+              <Text style={styles.cardDesc} numberOfLines={2}>{item.rules}</Text>
+
+              <View style={styles.badgeRow}>
+                <View style={styles.badgeContainer}>
+                  <Ionicons name="time-outline" size={12} color="#0056b3" />
+                  <Text style={styles.badgeText}>{item.duration_minutes} min</Text>
+                </View>
+                <View style={[styles.badgeContainer, { marginLeft: 8 }]}>
+                  <Ionicons name="help-circle-outline" size={12} color="#0056b3" />
+                  <Text style={styles.badgeText}>{item.total_questions_to_display} Soal</Text>
+                </View>
+              </View>
             </View>
           </View>
-        </View>
-        <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-          <View style={{ backgroundColor: '#E3F2FD', padding: 8, borderRadius: 20 }}>
-            <Ionicons name="play" size={20} color="#0056b3" />
+
+          <View style={styles.quizCardRight}>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" />
           </View>
-        </View>
+        </LinearGradient>
       </TouchableOpacity>
     );
 
@@ -378,10 +396,67 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     letterSpacing: 1
   },
-  quizCard: { backgroundColor: 'white', padding: 16, borderRadius: 12, marginBottom: 12, elevation: 2, flexDirection: 'row', alignItems: 'center', shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  badgeContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E3F2FD', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  quizCard: {
+    marginBottom: 16,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    backgroundColor: 'white' // Fallback
+  },
+  quizCardGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f0f0f0'
+  },
+  quizCardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quizCardRight: {
+    marginLeft: 10,
+  },
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 4
+  },
+  cardDesc: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginBottom: 8,
+    lineHeight: 16
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0'
+  },
   badgeText: { fontSize: 10, color: '#0056b3', marginLeft: 4, fontWeight: '600' },
+
   card: { backgroundColor: 'white', borderRadius: 12, padding: 20, elevation: 3, marginBottom: 20 },
   descText: { fontSize: 13, color: '#444', textAlign: 'justify', lineHeight: 20 },
   infoBox: { marginTop: 15, marginBottom: 15, padding: 10, backgroundColor: '#F8F9FA', borderRadius: 8 },

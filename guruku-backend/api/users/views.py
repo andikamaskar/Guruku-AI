@@ -93,3 +93,59 @@ class ProfileUpdateView(APIView):
             # Return updated user data similar to dashboard or login
             return Response(UserDashboardSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TeacherDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'teacher':
+             return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
+        
+        user = request.user
+        # Stats
+        active_classes = Class.objects.filter(teacher=user).count()
+        # Students count: Sum of students in all classes taught by this teacher
+        # distinct() is important because a student can be in multiple classes
+        total_students = User.objects.filter(joined_classes__teacher=user, role='student').distinct().count()
+        
+        # Pending Assignments (For now mock or simple logic)
+        # Using Quiz attempts that need grading or just quiz count?
+        # Let's say "Assignments" = Quizzes created by teacher
+        from api.quizzes.models import Quiz
+        assignments_pending = Quiz.objects.filter(created_by=user).count()
+
+        return Response({
+            "activeClasses": active_classes,
+            "totalStudents": total_students,
+            "assignmentsPending": assignments_pending
+        })
+
+class SystemAnnouncementListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import SystemAnnouncement
+        from .serializers import SystemAnnouncementSerializer
+        from django.db.models import Q
+        
+        user_role = request.user.role
+
+        # Filter announcements: 
+        # target_role='all' OR target_role=user_role
+        announcements = SystemAnnouncement.objects.filter(
+            Q(target_role='all') | Q(target_role=user_role),
+            is_active=True
+        ).order_by('-created_at')
+
+        serializer = SystemAnnouncementSerializer(announcements, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        if request.user.role != 'admin':
+             return Response({"detail": "Not authorized. Only admin can create system announcements."}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer = SystemAnnouncementSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
