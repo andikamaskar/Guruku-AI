@@ -9,22 +9,22 @@ export default function App() {
         {
             title: 'Selamat Datang di Guruku.AI',
             desc: 'Platform pembelajaran pintar berbasis Artificial Intelligence untuk Guru dan Siswa.',
-            img: require('../assets/images/onboarding1.png')
+            img: require('../assets/images/img1.png')
         },
         {
             title: 'Kelola & Gabung Kelas',
             desc: 'Guru dapat membuat kelas dan materi, siswa dapat bergabung ke kelas dengan mudah.',
-            img: require('../assets/images/onboarding2.png')
+            img: require('../assets/images/img2.png')
         },
         {
             title: 'Quiz & AI Assistant',
             desc: 'Buat dan kerjakan kuis interaktif, serta bertanya langsung ke AI Assistant.',
-            img: require('../assets/images/onboarding3.png')
+            img: require('../assets/images/img3.png')
         },
         {
             title: 'Rekomendasi Pintar dari AI',
             desc: 'Dapatkan rekomendasi materi dan latihan sesuai kemampuan belajarmu.',
-            img: require('../assets/images/onboarding4.png')
+            img: require('../assets/images/img4.png')
         }
     ];
 
