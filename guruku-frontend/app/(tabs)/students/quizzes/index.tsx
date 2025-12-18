@@ -15,12 +15,14 @@ import {
   Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import FloatingButton from "../../../../components/FloatingButton"; // Sesuaikan path jika perlu
 import BottomNav from "../../../../components/BottomNav"; // Sesuaikan path jika perlu
 
 // Import Service API
 import { fetchDashboardData } from "../../../../services/dashboard";
 import { fetchClasses } from "../../../../services/classes";
+import { fetchStudentQuizzes, Quiz } from "../../../../services/quizzes"; // Import Quiz Service
 import API_BASE_URL from "../../../../config/api";
 
 const COLORS = {
@@ -65,9 +67,16 @@ function ClassCard({
           {image ? (
             <Image source={image} style={styles.cardImageActual} />
           ) : (
-            <Text style={{ color: COLORS.mediumText, fontSize: 10 }}>
-              {kodeKelas}
-            </Text>
+            <LinearGradient
+              colors={['#ffffff', '#E1F5FE']}
+              style={styles.placeholderGradient}
+            >
+              <View style={styles.iconCircle}>
+                <Ionicons name="book" size={24} color={COLORS.primary} />
+              </View>
+              <Text style={styles.placeholderCodeLabel}>KODE KELAS</Text>
+              <Text style={styles.placeholderCodeValue}>{kodeKelas}</Text>
+            </LinearGradient>
           )}
         </View>
       </LinearGradient>
@@ -109,6 +118,10 @@ export default function KelasScreen() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Active Quizzes State
+  const [activeQuizzes, setActiveQuizzes] = useState<Quiz[]>([]);
+  const [loadingActivities, setLoadingActivities] = useState(true);
+
   // === 1. FETCH DATA DARI DATABASE ===
   useEffect(() => {
     loadData();
@@ -117,6 +130,8 @@ export default function KelasScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setLoadingActivities(true);
+
       const dashboardData = await fetchDashboardData();
       setUser(dashboardData.user);
 
@@ -129,16 +144,35 @@ export default function KelasScreen() {
         guru: cls.teacher_name,
         isJoined: true,
         progress: 0,
-        kodeKelas: cls.invite_code, 
+        kodeKelas: cls.invite_code,
         lastAccessed: Date.now(),
       }));
 
       setKelasList(formattedClasses);
+
+      // Fetch Active Quizzes for "My Activities"
+      const quizzes = await fetchStudentQuizzes();
+      const now = new Date();
+
+      const filtered = quizzes.filter((q: Quiz) => {
+        // Check if Deadline is future or null
+        const isFuture = q.deadline ? new Date(q.deadline) > now : true;
+        // Check if user has attempts left
+        const attempts = q.user_attempts_count || 0;
+        const max = q.max_attempts || 1;
+        const hasAttempts = attempts < max;
+
+        return isFuture && hasAttempts && q.is_active;
+      });
+
+      setActiveQuizzes(filtered);
+
     } catch (error) {
       console.error("Gagal memuat data:", error);
       Alert.alert("Error", "Gagal memuat data kelas.");
     } finally {
       setLoading(false);
+      setLoadingActivities(false);
     }
   };
 
@@ -154,7 +188,7 @@ export default function KelasScreen() {
       // Mengarahkan ke file ListQuiz/index.tsx
       // Kita mengirim 'classCode' agar halaman quiz tahu kelas mana yang dibuka
       router.push({
-        pathname: "/(tabs)/students/quizzes/ListQuiz", 
+        pathname: "/(tabs)/students/quizzes/ListQuiz",
         params: {
           classCode: selectedClass.kodeKelas,
           className: selectedClass.title,
@@ -235,23 +269,72 @@ export default function KelasScreen() {
           </View>
         </LinearGradient>
 
-        {/* ACTIVITIES */}
+        {/* === ACTIVITIES BANNER === */}
         <View style={styles.activityCard}>
           <View style={styles.activityRow}>
             <View style={styles.activityLeft}>
-              <View style={styles.activityImage}></View>
+              <View style={styles.activityImageWrapper}>
+                <Image
+                  source={require('@/assets/dashboard/Activityimg.png')}
+                  style={styles.activityImageActual}
+                />
+              </View>
             </View>
             <View style={styles.activityRight}>
-              <Text style={styles.activityTitle}>My Activities</Text>
+              <Text style={styles.activityTitle}>Aktivitas Saya</Text>
               <Text style={styles.activitySubtitle}>
-                Cek progres kelas tugas kamu disini
+                Lihat kuis dan tugas yang sedang berlangsung.
               </Text>
-              <TouchableOpacity style={styles.seeButton}>
-                <Text style={styles.seeButtonText}>Lihat </Text>
+              {/* Toggle / Scroll Button */}
+              <TouchableOpacity
+                style={styles.seeButton}
+                onPress={() => router.push('/(tabs)/students/quizzes/active')}
+              >
+                <Text style={styles.seeButtonText}>Lihat ({activeQuizzes.length})</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
+
+        {/* === ACTIVE QUIZZES LIST (PREMIUM DESIGN) === */}
+        {activeQuizzes.length > 0 && (
+          <View style={styles.activeSection}>
+            <Text style={styles.sectionTitle}>Sedang Berjalan</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.activeScroll}>
+              {activeQuizzes.map((quiz) => (
+                <TouchableOpacity
+                  key={quiz.id}
+                  style={styles.premiumQuizCard}
+                  onPress={() => router.push(`/(tabs)/students/quizzes/${quiz.id}/attempt`)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.cardHeaderStrip} />
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardTopRow}>
+                      <View style={styles.badgeContainer}>
+                        <Text style={styles.badgeText}>{quiz.duration_minutes} Menit</Text>
+                      </View>
+                      <View style={[styles.badgeContainer, { backgroundColor: '#E3F2FD' }]}>
+                        <Text style={[styles.badgeText, { color: COLORS.primary }]}>{quiz.class_name}</Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.cardTitle} numberOfLines={2}>{quiz.title}</Text>
+
+                    <View style={styles.cardFooter}>
+                      <Text style={styles.attemptText}>
+                        <Text style={{ fontWeight: 'bold' }}>{quiz.user_attempts_count || 0}</Text>/{quiz.max_attempts} Percobaan
+                      </Text>
+                      <View style={styles.startButton}>
+                        <Text style={styles.startButtonText}>Kerjakan</Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         <Text style={styles.sectionTitle}>{sectionTitleText}</Text>
 
@@ -408,11 +491,41 @@ const styles = StyleSheet.create({
   emptyClassImage: {
     width: "90%",
     height: 110,
-    borderRadius: 10,
-    backgroundColor: COLORS.lightGray,
-    marginBottom: 10,
+    borderRadius: 12,
+    // Removed solid gray background, now using gradient child
+    marginBottom: 0, // Adjusted margins
+    overflow: 'hidden',
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: 'white', // Fallback
+    elevation: 2
+  },
+  placeholderGradient: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10
+  },
+  iconCircle: {
+    width: 40, height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E3F2FD',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 6
+  },
+  placeholderCodeLabel: {
+    fontSize: 8,
+    color: '#888',
+    letterSpacing: 1,
+    fontWeight: 'bold',
+    marginBottom: 2
+  },
+  placeholderCodeValue: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace'
   },
   cardImageActual: { width: "100%", height: "100%", borderRadius: 10 },
   textWrapper: {
@@ -445,6 +558,133 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 11,
     color: COLORS.primary,
-    marginTop: 2,
   },
+
+  // --- PREMIUM QUIZ CARD STYLES ---
+  activeSection: { marginTop: 10, marginBottom: 10 },
+  activeScroll: { paddingHorizontal: 20, paddingBottom: 15 },
+
+  premiumQuizCard: {
+    width: 260,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginRight: 15,
+    // Shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+    overflow: 'hidden',
+    borderWidth: 1, borderColor: '#f0f0f0'
+  },
+  cardHeaderStrip: {
+    height: 6,
+    width: '100%',
+    backgroundColor: COLORS.secondary // Gold color
+  },
+  cardContent: { padding: 15 },
+  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  badgeContainer: {
+    backgroundColor: '#FFF8E1',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6
+  },
+  badgeText: { fontSize: 10, fontWeight: 'bold', color: '#FFA000' },
+
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 5, height: 44 },
+
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f5f5f5'
+  },
+  attemptText: { fontSize: 11, color: '#888' },
+  startButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8
+  },
+  startButtonText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
+
+  // --- RESTORED ACTIVITY BANNER STYLES ---
+  activityImageWrapper: {
+    width: "100%",
+    height: 140,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    overflow: 'hidden'
+  },
+  activityImageActual: {
+    width: "100%",
+    height: "100%",
+    resizeMode: 'cover'
+  },
+
+  // --- MY ACTIVITY NEW STYLES ---
+  activitySection: { marginBottom: 10 },
+  sectionHeader: { marginTop: 25, marginBottom: 15, marginLeft: 20 },
+  activitiesScroll: { paddingHorizontal: 20, paddingBottom: 20 },
+
+  activeQuizCard: {
+    width: 160,
+    height: 170,
+    marginRight: 15,
+    borderRadius: 16,
+    elevation: 5,
+    shadowColor: "#FFC107",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  quizCardGradient: {
+    flex: 1,
+    borderRadius: 16,
+    padding: 15,
+    justifyContent: 'space-between'
+  },
+  quizCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12
+  },
+  quizTimeText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
+  quizTitleText: { color: 'white', fontSize: 16, fontWeight: 'bold', lineHeight: 20, marginBottom: 5 },
+  quizClassText: { color: 'rgba(255,255,255,0.9)', fontSize: 12 },
+
+  quizButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginTop: 10
+  },
+  quizButtonText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 12 },
+
+  // Empty State
+  activityCardEmpty: {
+    marginHorizontal: 20,
+    padding: 15,
+    borderRadius: 15,
+    backgroundColor: "#fff",
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    elevation: 2
+  }
 });

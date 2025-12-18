@@ -6,7 +6,7 @@ router = DefaultRouter()
 
 router.register(r'manage', views.QuizManageViewSet, basename='quiz-manage')
 
-router.register(r'exam', views.QuizStudentViewSet, basename='quiz-student')
+router.register(r'student', views.QuizStudentViewSet, basename='quiz-student')
 
 urlpatterns = [
     path('', include(router.urls)),

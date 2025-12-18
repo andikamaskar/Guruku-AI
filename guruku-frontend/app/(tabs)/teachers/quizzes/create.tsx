@@ -39,6 +39,7 @@ export default function CreateQuizScreen() {
     const [description, setDescription] = useState('');
     const [classId, setClassId] = useState('');
     const [duration, setDuration] = useState('60'); // Minutes
+    const [maxAttempts, setMaxAttempts] = useState('1'); // New State
     const [deadline, setDeadline] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -84,6 +85,7 @@ export default function CreateQuizScreen() {
             setDescription(data.description);
             setClassId(data.class_id || (data.class_obj ? data.class_obj.id : ''));
             setDuration(data.duration_minutes.toString());
+            setMaxAttempts((data.max_attempts || 1).toString()); // Load max_attempts
             if (data.deadline) setDeadline(new Date(data.deadline));
 
             // Populate questions
@@ -245,6 +247,7 @@ export default function CreateQuizScreen() {
                 description,
                 class_id: classId,
                 duration_minutes: parseInt(duration),
+                max_attempts: parseInt(maxAttempts) || 1, // Add to Payload
                 deadline: deadline.toISOString(),
                 is_active: true,
                 questions: questions.map(q => ({
@@ -316,6 +319,15 @@ export default function CreateQuizScreen() {
                 placeholder="60"
                 value={duration}
                 onChangeText={setDuration}
+                keyboardType="numeric"
+            />
+
+            <Text style={styles.label}>Maksimal Percobaan</Text>
+            <TextInput
+                style={styles.input}
+                placeholder="Contoh: 1 (Default)"
+                value={maxAttempts}
+                onChangeText={setMaxAttempts}
                 keyboardType="numeric"
             />
 

@@ -108,6 +108,7 @@ export default function KelasScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
+
       // Fetch user data for header
       const userData = await fetchDashboardData();
       setUser(userData.user);
@@ -125,6 +126,7 @@ export default function KelasScreen() {
       setJoinedClasses(joined);
       setRecommendedClasses(recommended);
       setAllClasses(all);
+
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
       Alert.alert("Error", "Gagal memuat data dashboard");
@@ -440,4 +442,6 @@ const styles = StyleSheet.create({
     width: "48%", // Slightly wider for better fill
     marginBottom: 20,
   },
+
+
 });

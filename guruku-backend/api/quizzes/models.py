@@ -14,6 +14,7 @@ class Quiz(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_quizzes')
     total_questions = models.PositiveIntegerField(default=0)
     max_score = models.FloatField(default=100.0)
+    max_attempts = models.PositiveIntegerField(default=1, help_text="Maksimal percobaan pengerjaan kuis")
     duration_minutes = models.PositiveIntegerField(help_text="Durasi kuis dalam menit")
     deadline = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)

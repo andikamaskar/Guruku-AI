@@ -39,7 +39,7 @@ class QuizAdminSerializer(serializers.ModelSerializer):
             'id', 'exam_id', 'title', 'description', 
             'class_id', 'class_name', 
             'duration_minutes', 'deadline', 'is_active', 
-            'total_questions', 'max_score', 
+            'total_questions', 'max_score', 'max_attempts',
             'questions', 
             'created_by', 'created_by_name', 'created_at'
         ]
@@ -68,6 +68,7 @@ class QuizAdminSerializer(serializers.ModelSerializer):
         instance.duration_minutes = validated_data.get('duration_minutes', instance.duration_minutes)
         instance.deadline = validated_data.get('deadline', instance.deadline)
         instance.is_active = validated_data.get('is_active', instance.is_active)
+        instance.max_attempts = validated_data.get('max_attempts', instance.max_attempts)
         instance.save()
         
         if 'questions' in validated_data:
@@ -93,10 +94,25 @@ class QuestionStudentSerializer(serializers.ModelSerializer):
 class QuizDetailSerializer(serializers.ModelSerializer):
     questions = QuestionStudentSerializer(many=True, read_only=True)
     class_name = serializers.CharField(source='class_obj.name', read_only=True)
+    user_attempts_count = serializers.SerializerMethodField()
+    latest_score = serializers.SerializerMethodField()
     
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'description', 'class_name', 'duration_minutes', 'deadline', 'questions']
+        fields = ['id', 'title', 'description', 'class_name', 'duration_minutes', 'deadline', 'questions', 'max_attempts', 'user_attempts_count', 'latest_score']
+
+    def get_user_attempts_count(self, obj):
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            return 0
+        return QuizAttempt.objects.filter(quiz=obj, user=user).count()
+
+    def get_latest_score(self, obj):
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            return None
+        attempt = QuizAttempt.objects.filter(quiz=obj, user=user).order_by('-submitted_at').first()
+        return attempt.score if attempt else None
 
 class QuizAttemptSerializer(serializers.ModelSerializer):
     answers = serializers.ListField(write_only=True)
@@ -112,6 +128,12 @@ class QuizAttemptSerializer(serializers.ModelSerializer):
         answers_data = validated_data.pop('answers')
         user = self.context['request'].user
         quiz = validated_data.get('quiz')
+        
+        # Validate Attempt Limit
+        if quiz.max_attempts > 0:
+            count = QuizAttempt.objects.filter(quiz=quiz, user=user).count()
+            if count >= quiz.max_attempts:
+               raise serializers.ValidationError("Anda telah mencapai batas maksimal percobaan untuk kuis ini.")
         
         total_score = 0
         

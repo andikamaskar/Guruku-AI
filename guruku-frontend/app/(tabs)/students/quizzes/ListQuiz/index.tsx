@@ -9,11 +9,13 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  ListRenderItem
+  ListRenderItem,
+  ImageBackground
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { fetchStudentQuizzes } from '@/services/quizzes';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface QuizData {
   id: string;
@@ -22,8 +24,17 @@ interface QuizData {
   class_name: string;
   duration_minutes: number;
   deadline: string;
-  total_questions: number; // API returns this
+  total_questions: number;
+  is_active: boolean;
 }
+
+const COLORS = {
+  primary: "#0B409C",
+  accent: "#FFD700",
+  textLight: "#F5F6FA",
+  textDark: "#333",
+  bg: "#F5F6FA"
+};
 
 export default function ListQuizScreen() {
   const router = useRouter();
@@ -37,17 +48,14 @@ export default function ListQuizScreen() {
     try {
       setLoading(true);
       const data = await fetchStudentQuizzes();
-
-      // Filter by class name if provided, otherwise show all or filter by other means
-      // The API returns 'class_name'. Check similarity.
       let filtered = data;
       if (className) {
         filtered = data.filter((q: any) => q.class_name === className);
       }
       setQuizzes(filtered);
     } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Gagal memuat kuis.");
+      //   Alert.alert("Error", "Gagal memuat kuis.");
+      console.log("Error fetching quizzes", error);
     } finally {
       setLoading(false);
     }
@@ -64,163 +72,254 @@ export default function ListQuizScreen() {
   };
 
   const renderQuizItem: ListRenderItem<QuizData> = ({ item }) => {
+    // Calculate if overdue
+    const isOverdue = item.deadline ? new Date(item.deadline) < new Date() : false;
+
     return (
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.quizTitle}>{item.title}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: "#E3F2FD" }]}>
-            <Text style={[styles.statusText, { color: "#1565C0" }]}>Available</Text>
-          </View>
-        </View>
-
-        <Text style={styles.classLabel}>{item.class_name}</Text>
-
-        <View style={styles.infoRow}>
-          <View style={styles.infoItem}>
-            <Ionicons name="time-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>{item.duration_minutes} Menit</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Ionicons name="document-text-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>{item.total_questions || '?'} Soal</Text>
-          </View>
-        </View>
-
-        {item.deadline && (
-          <View style={styles.deadlineRow}>
-            <Ionicons name="calendar-outline" size={16} color="#D32F2F" />
-            <Text style={styles.deadlineText}>
-              Deadline: {new Date(item.deadline).toLocaleString()}
-            </Text>
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleStartQuiz(item.id)}
+      <View style={styles.cardContainer}>
+        <LinearGradient
+          colors={['#fff', '#fefefe']}
+          style={styles.card}
         >
-          <Text style={styles.actionButtonText}>Mulai Kerjakan</Text>
-        </TouchableOpacity>
+          <View style={styles.cardAccent} />
+
+          <View style={styles.cardContent}>
+            <View style={styles.cardHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.quizTitle}>{item.title}</Text>
+                <Text style={styles.classLabel}>{item.class_name}</Text>
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: isOverdue ? '#FFEBEE' : '#E3F2FD' }]}>
+                <Text style={[styles.statusText, { color: isOverdue ? '#D32F2F' : '#1565C0' }]}>
+                  {isOverdue ? 'Berakhir' : 'Tersedia'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.detailsGrid}>
+              <View style={styles.detailItem}>
+                <Ionicons name="time-outline" size={18} color="#0B409C" />
+                <Text style={styles.detailText}>{item.duration_minutes} Menit</Text>
+              </View>
+              <View style={styles.detailItem}>
+                <Ionicons name="document-text-outline" size={18} color="#0B409C" />
+                <Text style={styles.detailText}>{item.total_questions || '?'} Soal</Text>
+              </View>
+            </View>
+
+            {item.deadline && (
+              <View style={[styles.deadlineBox, isOverdue && styles.overdueBox]}>
+                <Ionicons name="calendar-outline" size={16} color={isOverdue ? '#D32F2F' : '#666'} />
+                <Text style={[styles.deadlineText, isOverdue && { color: '#D32F2F' }]}>
+                  {new Date(item.deadline).toLocaleString('id-ID', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                  })}
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.actionButton, isOverdue && styles.disabledButton]}
+              onPress={() => !isOverdue && handleStartQuiz(item.id)}
+              disabled={isOverdue}
+            >
+              <LinearGradient
+                colors={isOverdue ? ['#ccc', '#bbb'] : ['#0B409C', '#005DFF']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={styles.btnGradient}
+              >
+                <Text style={styles.actionButtonText}>
+                  {isOverdue ? "Waktu Habis" : "Mulai Kerjakan"}
+                </Text>
+                {!isOverdue && <Ionicons name="arrow-forward" size={16} color="white" />}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar backgroundColor="#0B409C" barStyle="light-content" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Daftar Kuis</Text>
-        <View style={{ width: 24 }} />
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0B409C" />
+
+      {/* Header Background */}
+      <View style={styles.headerBgContainer}>
+        <LinearGradient colors={['#0B409C', '#1976D2']} style={styles.headerBg} />
+        <View style={styles.headerCurve} />
       </View>
 
-      <View style={styles.content}>
-        {className && (
-          <Text style={styles.subHeader}>
-            Kelas: {className}
-          </Text>
-        )}
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Daftar Kuis</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#0B409C" style={{ marginTop: 50 }} />
-        ) : (
-          <FlatList
-            data={quizzes}
-            keyExtractor={(item) => item.id}
-            renderItem={renderQuizItem}
-            contentContainerStyle={{ paddingBottom: 20 }}
-            ListEmptyComponent={() => (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>Tidak ada kuis tersedia.</Text>
-              </View>
-            )}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+        <View style={styles.content}>
+          {className && (
+            <View style={styles.filterContainer}>
+              <Text style={styles.filterText}>Filtering: {className}</Text>
+              <TouchableOpacity onPress={() => router.setParams({ className: '' })}>
+                <Ionicons name="close-circle" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {loading ? (
+            <View style={styles.centerBox}>
+              <ActivityIndicator size="large" color="#0B409C" />
+              <Text style={styles.loadingText}>Memuat kuis...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={quizzes}
+              keyExtractor={(item) => item.id}
+              renderItem={renderQuizItem}
+              contentContainerStyle={{ paddingBottom: 30, paddingTop: 10 }}
+              showsVerticalScrollIndicator={false}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyState}>
+                  <Ionicons name="library-outline" size={60} color="#ccc" />
+                  <Text style={styles.emptyText}>Belum ada kuis tersedia.</Text>
+                </View>
+              )}
+            />
+          )}
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F6FA' },
+
+  // Header Styles
+  headerBgContainer: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    height: 180,
+    zIndex: -1
+  },
+  headerBg: { flex: 1 },
+  headerCurve: {
+    backgroundColor: '#F5F6FA',
+    height: 30,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    marginTop: -20
+  },
   header: {
-    backgroundColor: '#0B409C',
-    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    elevation: 4
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    height: 60
   },
-  backButton: { padding: 4 },
-  headerTitle: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  content: { flex: 1, padding: 20 },
-  subHeader: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 15 },
+  backButton: { padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12 },
+  headerTitle: { color: 'white', fontSize: 20, fontWeight: 'bold' },
 
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+  content: { flex: 1, paddingHorizontal: 20 },
+
+  filterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#0B409C',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 15
+  },
+  filterText: { color: 'white', fontWeight: 'bold' },
+
+  // Card Styles
+  cardContainer: {
+    marginBottom: 20,
+    borderRadius: 16,
+    elevation: 4,
+    shadowColor: "#0B409C",
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 8,
+  },
+  card: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'white'
+  },
+  cardAccent: {
+    height: 4,
+    backgroundColor: '#FFD700'
+  },
+  cardContent: {
+    padding: 20
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8
   },
   quizTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    flex: 1,
-    marginRight: 10
+    marginBottom: 4
   },
   classLabel: {
-    fontSize: 12, color: '#0B409C', fontWeight: 'bold', marginBottom: 12
+    fontSize: 14, color: '#0B409C', fontWeight: '600'
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   statusText: { fontSize: 10, fontWeight: 'bold' },
 
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    gap: 16
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4
-  },
-  infoText: { fontSize: 12, color: '#666' },
+  divider: { height: 1, backgroundColor: '#f0f0f0', marginVertical: 15 },
 
-  deadlineRow: {
+  detailsGrid: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    gap: 20
+  },
+  detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 16,
-    backgroundColor: '#FFEBEE',
-    padding: 8,
-    borderRadius: 6
+    gap: 6
   },
-  deadlineText: { fontSize: 12, color: '#D32F2F', fontWeight: '500' },
+  detailText: { fontSize: 13, color: '#555', fontWeight: '500' },
+
+  deadlineBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 20,
+    backgroundColor: '#F8F9FA',
+    padding: 10,
+    borderRadius: 8
+  },
+  overdueBox: { backgroundColor: '#FFEBEE' },
+  deadlineText: { fontSize: 12, color: '#666', fontWeight: '500' },
 
   actionButton: {
-    backgroundColor: '#0B409C',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center'
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2
+  },
+  disabledButton: { elevation: 0 },
+  btnGradient: {
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8
   },
   actionButtonText: {
     color: 'white',
@@ -228,6 +327,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
 
-  emptyState: { alignItems: 'center', marginTop: 50 },
-  emptyText: { color: '#999' }
+  centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 10, color: '#666' },
+  emptyState: { alignItems: 'center', marginTop: 80 },
+  emptyText: { color: '#999', marginTop: 10, fontSize: 16 }
 });

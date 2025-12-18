@@ -21,6 +21,9 @@ export interface Quiz {
     is_active: boolean;
     total_questions: number;
     max_score: number;
+    max_attempts: number; // New Field
+    user_attempts_count?: number; // From DetailSerializer
+    latest_score?: number; // From DetailSerializer
     questions?: Question[];
     created_at?: string;
 }
