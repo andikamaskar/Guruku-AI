@@ -14,7 +14,8 @@ import {
   ActivityIndicator,
   ImageBackground,
   Alert,
-  Dimensions
+  Dimensions,
+  Image
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -119,7 +120,10 @@ export default function ChatBotScreen() {
       <View style={[styles.messageRow, isUser ? styles.userRow : styles.botRow]}>
         {!isUser && (
           <View style={styles.avatarContainer}>
-            <Ionicons name="logo-android" size={24} color="#fff" />
+            <Image
+              source={require('../../assets/images/ChatBot-Image.png')}
+              style={styles.avatarImage}
+            />
           </View>
         )}
 
@@ -296,8 +300,7 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: "#0B409C",
+    backgroundColor: "transparent",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
@@ -376,4 +379,8 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: "#B0BEC5",
   },
+  avatarImage: {
+    width: 32,
+    height: 32,
+  }
 });
