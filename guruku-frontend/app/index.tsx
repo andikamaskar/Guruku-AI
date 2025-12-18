@@ -7,24 +7,24 @@ export default function App() {
 
     const pages = [
         {
-            title: 'What is Lorem Ipsum?',
-            desc: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-            img: require('../assets/images/img1.png')
+            title: 'Selamat Datang di Guruku.AI',
+            desc: 'Platform pembelajaran pintar berbasis Artificial Intelligence untuk Guru dan Siswa.',
+            img: require('../assets/images/onboarding1.png')
         },
         {
-            title: 'Why do we use it?',
-            desc: 'It is a long established fact that a reader will be distracted by the readable content.',
-            img: require('../assets/images/img2.png')
+            title: 'Kelola & Gabung Kelas',
+            desc: 'Guru dapat membuat kelas dan materi, siswa dapat bergabung ke kelas dengan mudah.',
+            img: require('../assets/images/onboarding2.png')
         },
         {
-            title: 'Where does it come from?',
-            desc: 'Contrary to popular belief, Lorem Ipsum is not simply random text.',
-            img: require('../assets/images/img3.png')
+            title: 'Quiz & AI Assistant',
+            desc: 'Buat dan kerjakan kuis interaktif, serta bertanya langsung ke AI Assistant.',
+            img: require('../assets/images/onboarding3.png')
         },
         {
-            title: 'Where can I get some?',
-            desc: 'There are many variations of passages of Lorem Ipsum available.',
-            img: require('../assets/images/img4.png')
+            title: 'Rekomendasi Pintar dari AI',
+            desc: 'Dapatkan rekomendasi materi dan latihan sesuai kemampuan belajarmu.',
+            img: require('../assets/images/onboarding4.png')
         }
     ];
 
