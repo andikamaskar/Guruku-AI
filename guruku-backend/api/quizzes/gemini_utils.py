@@ -31,32 +31,43 @@ def generate_quiz_from_file(file_path: str, mime_type: str, num_questions: int =
         print(f"File uploaded: {uploaded_file.uri}")
 
         # 2. Configure Model
-        # We use a specific system instruction for JSON generation
+        # 2. Configure Model
+        # Optimized for Flash Lite to prevent looping
         generation_config = {
-            "temperature": 0.4,
+            "temperature": 0.1, # Low temperature for clearer logic
             "response_mime_type": "application/json",
-            "response_schema": list[Question]
+            "max_output_tokens": 8192, # Prevent infinite loops
         }
         
         model = genai.GenerativeModel(
             model_name="gemini-2.5-flash-lite",
-            generation_config=generation_config,
-            system_instruction="""
-            You are an expert educational content creator.
-            Your task is to analyze the provided document and extract/generate high-quality multiple-choice quiz questions.
-            
-            Rules:
-            1. Generate substantially correct and relevant questions based on the text.
-            2. For each question, provide 4 options (strings).
-            3. Specify the correct answer (must match one of the options exactly).
-            4. Assign 'order' starting from 1.
-            5. Default points to 10.
-            6. Return PURE JSON list.
-            """
+            generation_config=generation_config
         )
 
         # 3. Generate Content
-        prompt = f"Create {num_questions} multiple-choice questions based on this document."
+        prompt_text = f"""
+        You are an educational assistant. 
+        TASK: Extract ALL multiple-choice questions from the attached document, up to a maximum of {num_questions}.
+        
+        RULES:
+        1. If the document has existing questions, USE THEM.
+        2. If the document has an Answer Key (Kunci Jawaban), USE IT for the 'answer' field.
+        3. If no key is found, deduce the correct answer.
+        4. Return ONLY a valid JSON List. No markdown formatting, no plain text.
+        
+        JSON SCHEMA:
+        [
+          {{
+            "text": "Question text",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "answer": "Exact string of correct option",
+            "points": 10,
+            "order": 1
+          }}
+        ]
+        """
+        
+        prompt = prompt_text
         
         response = model.generate_content([uploaded_file, prompt])
         

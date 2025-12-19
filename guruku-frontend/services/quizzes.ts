@@ -158,6 +158,7 @@ export const generateQuizFromMaterial = async (fileUri: string, fileType: string
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
         },
+        timeout: 120000, // Increase timeout to 120 seconds for AI processing
     });
     return response.data;
 };

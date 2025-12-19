@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView,
     Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Modal
@@ -42,6 +42,8 @@ export default function CreateQuizScreen() {
     const [maxAttempts, setMaxAttempts] = useState('1'); // New State
     const [deadline, setDeadline] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showTimePicker, setShowTimePicker] = useState(false);
+    const defaultsSet = useRef(false);
 
     // Data for Step 1
     const [classes, setClasses] = useState<any[]>([]);
@@ -69,7 +71,10 @@ export default function CreateQuizScreen() {
         try {
             const data = await fetchClasses(); // Fetch teacher's classes
             setClasses(data);
-            if (!isEditMode && data.length > 0) setClassId(data[0].id);
+            if (!isEditMode && data.length > 0 && !defaultsSet.current) {
+                setClassId(data[0].id);
+                defaultsSet.current = true;
+            }
         } catch (error) {
             Alert.alert("Error", "Gagal memuat data kelas.");
         } finally {
@@ -128,8 +133,8 @@ export default function CreateQuizScreen() {
             const file = result.assets[0];
             setUploading(true);
 
-            // Ask for number of questions? Default to 5 for now.
-            const generatedQuestions = await generateQuizFromMaterial(file.uri, file.mimeType || 'application/pdf', file.name);
+            // Ask for number of questions? Default to 20 to capture most of the doc.
+            const generatedQuestions = await generateQuizFromMaterial(file.uri, file.mimeType || 'application/pdf', file.name, 20);
 
             // Merge with existing or replace? Let's append or ask user. For now, append.
             const newQuestions = generatedQuestions.map((q: any, idx: number) => ({
@@ -332,10 +337,17 @@ export default function CreateQuizScreen() {
             />
 
             <Text style={styles.label}>Tenggat Waktu</Text>
-            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
-                <Ionicons name="calendar-outline" size={20} color="#666" />
-                <Text style={styles.dateText}>{deadline.toLocaleString()}</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.dateButton, { flex: 1 }]}>
+                    <Ionicons name="calendar-outline" size={20} color="#666" />
+                    <Text style={styles.dateText}>{deadline.toLocaleDateString()}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => setShowTimePicker(true)} style={[styles.dateButton, { flex: 1 }]}>
+                    <Ionicons name="time-outline" size={20} color="#666" />
+                    <Text style={styles.dateText}>{deadline.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                </TouchableOpacity>
+            </View>
 
             {showDatePicker && (
                 <DateTimePicker
@@ -344,7 +356,29 @@ export default function CreateQuizScreen() {
                     display="default"
                     onChange={(event, selectedDate) => {
                         setShowDatePicker(false);
-                        if (selectedDate) setDeadline(selectedDate);
+                        if (selectedDate) {
+                            const newDate = new Date(selectedDate);
+                            newDate.setHours(deadline.getHours());
+                            newDate.setMinutes(deadline.getMinutes());
+                            setDeadline(newDate);
+                        }
+                    }}
+                />
+            )}
+
+            {showTimePicker && (
+                <DateTimePicker
+                    value={deadline}
+                    mode="time"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                        setShowTimePicker(false);
+                        if (selectedDate) {
+                            const newDate = new Date(deadline);
+                            newDate.setHours(selectedDate.getHours());
+                            newDate.setMinutes(selectedDate.getMinutes());
+                            setDeadline(newDate);
+                        }
                     }}
                 />
             )}

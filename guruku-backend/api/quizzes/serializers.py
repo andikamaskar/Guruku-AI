@@ -65,6 +65,8 @@ class QuizAdminSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.title = validated_data.get('title', instance.title)
         instance.description = validated_data.get('description', instance.description)
+        # Update class_id (mapped to class_obj in validated_data)
+        instance.class_obj = validated_data.get('class_obj', instance.class_obj)
         instance.duration_minutes = validated_data.get('duration_minutes', instance.duration_minutes)
         instance.deadline = validated_data.get('deadline', instance.deadline)
         instance.is_active = validated_data.get('is_active', instance.is_active)
@@ -93,13 +95,14 @@ class QuestionStudentSerializer(serializers.ModelSerializer):
 
 class QuizDetailSerializer(serializers.ModelSerializer):
     questions = QuestionStudentSerializer(many=True, read_only=True)
+    class_id = serializers.PrimaryKeyRelatedField(read_only=True, source='class_obj')
     class_name = serializers.CharField(source='class_obj.name', read_only=True)
     user_attempts_count = serializers.SerializerMethodField()
     latest_score = serializers.SerializerMethodField()
     
     class Meta:
         model = Quiz
-        fields = ['id', 'title', 'description', 'class_name', 'duration_minutes', 'deadline', 'questions', 'max_attempts', 'user_attempts_count', 'latest_score']
+        fields = ['id', 'title', 'description', 'class_id', 'class_name', 'duration_minutes', 'deadline', 'is_active', 'questions', 'max_attempts', 'user_attempts_count', 'latest_score']
 
     def get_user_attempts_count(self, obj):
         user = self.context['request'].user

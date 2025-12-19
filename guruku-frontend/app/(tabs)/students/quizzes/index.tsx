@@ -135,35 +135,62 @@ export default function KelasScreen() {
       const dashboardData = await fetchDashboardData();
       setUser(dashboardData.user);
 
-      const classesData = await fetchClasses("joined");
+      // Fetch Classes and Quizzes in Parallel
+      const [classesData, quizzes] = await Promise.all([
+        fetchClasses("joined"),
+        fetchStudentQuizzes()
+      ]);
 
-      const formattedClasses = classesData.map((cls: any) => ({
-        id: cls.id,
-        title: cls.name,
-        image: cls.image || null,
-        guru: cls.teacher_name,
-        isJoined: true,
-        progress: 0,
-        kodeKelas: cls.invite_code,
-        lastAccessed: Date.now(),
-      }));
+      // Calculate Progress & Format Classes
+      const formattedClasses = classesData.map((cls: any) => {
+        // Filter quizzes for this class
+        const classQuizzes = quizzes.filter((q: Quiz) => q.class_id === cls.id);
+        const totalQuizzes = classQuizzes.length;
+
+        let completedQuizzes = 0;
+        classQuizzes.forEach((q: Quiz) => {
+          if (q.user_attempts_count && q.user_attempts_count > 0) {
+            completedQuizzes++;
+          }
+        });
+
+        const progress = totalQuizzes > 0 ? Math.round((completedQuizzes / totalQuizzes) * 100) : 0;
+
+        return {
+          id: cls.id,
+          title: cls.name,
+          image: cls.image || null,
+          guru: cls.teacher_name,
+          isJoined: true,
+          progress: progress,
+          kodeKelas: cls.invite_code,
+          lastAccessed: Date.now(),
+        };
+      });
 
       setKelasList(formattedClasses);
 
-      // Fetch Active Quizzes for "My Activities"
-      const quizzes = await fetchStudentQuizzes();
+      // Filter Active Quizzes for "My Activities"
       const now = new Date();
-
       const filtered = quizzes.filter((q: Quiz) => {
-        // Check if Deadline is future or null
-        const isFuture = q.deadline ? new Date(q.deadline) > now : true;
-        // Check if user has attempts left
+        // 1. Must be active
+        if (!q.is_active) return false;
+
+        // 2. Deadline must be in future (or null) - Handle Timezones if needed, but local comparison is usually ok for simple apps
+        // If deadline is string, parse it.
+        const deadlineDate = q.deadline ? new Date(q.deadline) : null;
+        const isFuture = deadlineDate ? deadlineDate > now : true;
+
+        // 3. Must have attempts remaining
         const attempts = q.user_attempts_count || 0;
         const max = q.max_attempts || 1;
         const hasAttempts = attempts < max;
 
-        return isFuture && hasAttempts && q.is_active;
+        return isFuture && hasAttempts;
       });
+
+      console.log('All Quizzes:', quizzes.length);
+      console.log('Active Filtered:', filtered.length);
 
       setActiveQuizzes(filtered);
 

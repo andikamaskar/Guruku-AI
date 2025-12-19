@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from .models import Quiz, QuizAttempt 
 from .serializers import QuizAdminSerializer, QuizDetailSerializer, QuizAttemptSerializer
 from .gemini_utils import generate_quiz_from_file
+from rest_framework.parsers import MultiPartParser, FormParser
 import tempfile
 import os
 
@@ -37,8 +38,7 @@ class QuizManageViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
-    @action(detail=False, methods=['post'], parser_classes=[]) 
-    # Note: parser_classes might need MultiPartParser if not global, but DRF defaults usually handle it.
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser]) 
     def generate_from_file(self, request):
         if 'file' not in request.FILES:
             return Response({"error": "No file provided"}, status=status.HTTP_400_BAD_REQUEST)
