@@ -140,3 +140,18 @@ class ClassAnnouncementListCreateView(APIView):
             serializer.save(teacher=request.user, class_obj=class_obj)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ClassLeaveView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        class_obj = get_object_or_404(Class, pk=pk)
+        if request.user.role != 'student':
+             return Response({"error": "Hanya siswa yang dapat keluar dari kelas."}, status=status.HTTP_403_FORBIDDEN)
+
+        if request.user in class_obj.students.all():
+            class_obj.students.remove(request.user)
+            return Response({"message": "Berhasil keluar dari kelas."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Anda belum bergabung di kelas ini."}, status=status.HTTP_400_BAD_REQUEST)

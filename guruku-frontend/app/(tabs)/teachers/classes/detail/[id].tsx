@@ -5,7 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getMaterials, createMaterial, deleteMaterial, Material } from '../../../../../services/materials';
-import { updateClass, getClassStudents, getAnnouncements, createAnnouncement, fetchClassDetails } from '../../../../../services/classes';
+import { updateClass, deleteClass, getClassStudents, getAnnouncements, createAnnouncement, fetchClassDetails } from '../../../../../services/classes';
 import MaterialItem from '../../../../../components/teacher/materials/MaterialItem';
 import CreateMaterialModal from '../../../../../components/teacher/materials/CreateMaterialModal';
 import { Image } from 'expo-image';
@@ -174,6 +174,31 @@ export default function ClassDetail() {
         } finally {
             setIsUpdating(false);
         }
+    };
+
+    const handleDeleteClass = () => {
+        Alert.alert(
+            "Hapus Kelas",
+            "Apakah Anda yakin ingin menghapus kelas ini? Tindakan ini tidak dapat dibatalkan.",
+            [
+                { text: "Batal", style: "cancel" },
+                {
+                    text: "Hapus",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            await deleteClass(id as string);
+                            Alert.alert("Sukses", "Kelas berhasil dihapus");
+                            router.replace("/(tabs)/teachers/classes");
+                        } catch (error) {
+                            Alert.alert("Error", "Gagal menghapus kelas");
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
     };
 
     return (
@@ -385,6 +410,16 @@ export default function ClassDetail() {
                             ) : (
                                 <Text style={styles.submitButtonText}>Simpan Perubahan</Text>
                             )}
+                        </TouchableOpacity>
+
+                        <View style={styles.divider} />
+
+                        <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={handleDeleteClass}
+                            disabled={isUpdating}
+                        >
+                            <Text style={styles.deleteButtonText}>Hapus Kelas</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -618,5 +653,25 @@ const styles = StyleSheet.create({
     announcementContent: {
         color: '#444',
         lineHeight: 20,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#E0E0E0',
+        marginTop: 20,
+        marginBottom: 10,
+    },
+    deleteButton: {
+        backgroundColor: '#FFEBEE',
+        paddingVertical: 14,
+        borderRadius: 10,
+        alignItems: 'center',
+        marginBottom: 10,
+        borderWidth: 1,
+        borderColor: '#FFCDD2',
+    },
+    deleteButtonText: {
+        color: '#D32F2F',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

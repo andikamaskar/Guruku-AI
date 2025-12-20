@@ -16,6 +16,36 @@ export const updateClass = async (id: string, data: any) => {
     }
 };
 
+export const deleteClass = async (id: string) => {
+    try {
+        const token = await getAuthHeader();
+        if (!token) throw new Error('No access token found');
+
+        const response = await api.delete(`/classes/${id}/`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting class:', error);
+        throw error;
+    }
+};
+
+export const leaveClass = async (id: string) => {
+    try {
+        const token = await getAuthHeader();
+        if (!token) throw new Error('No access token found');
+
+        const response = await api.post(`/classes/${id}/leave/`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error leaving class:', error);
+        throw error;
+    }
+};
+
 export const fetchClassDetails = async (id: string) => {
     try {
         const token = await getAuthHeader();

@@ -11,13 +11,15 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
-  ScrollView
+  ScrollView,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_BASE_URL from '../../../../../config/api';
+import { leaveClass } from '../../../../../services/classes';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -47,6 +49,7 @@ export default function DetailClassScreen() {
   const params = useLocalSearchParams();
   const classId = params.classId as string;
   const className = params.className as string || "Detail Kelas";
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'materi' | 'pengumuman' | 'siswa'>('materi');
 
@@ -164,6 +167,33 @@ export default function DetailClassScreen() {
     </View>
   );
 
+  const handleLeaveClass = () => {
+    Alert.alert(
+      "Keluar Kelas",
+      "Apakah Anda yakin ingin keluar dari kelas ini?",
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Keluar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsLeaving(true);
+              await leaveClass(classId);
+              Alert.alert("Sukses", "Anda telah keluar dari kelas.");
+              router.replace("/(tabs)/students/classes");
+              // Or router.back() depending on navigation flow
+            } catch (error) {
+              Alert.alert("Error", "Gagal keluar dari kelas.");
+            } finally {
+              setIsLeaving(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0B409C" />
@@ -178,6 +208,13 @@ export default function DetailClassScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {className}
         </Text>
+        <TouchableOpacity onPress={handleLeaveClass} style={{ padding: 5 }} disabled={isLeaving}>
+          {isLeaving ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Ionicons name="log-out-outline" size={24} color="white" />
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Tabs */}
