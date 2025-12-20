@@ -13,13 +13,14 @@ import {
   StatusBar,
   BackHandler,
   Alert,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Asumsi path komponen & services ini sudah benar di project kamu
 import FloatingButton from "../../../components/FloatingButton";
 import BottomNav from "../../../components/BottomNav";
-import { fetchDashboardData } from "../../../services/dashboard";
+import { fetchDashboardData, fetchAnnouncements } from "../../../services/dashboard";
 import API_BASE_URL from "../../../config/api";
 import { fetchClasses, joinClass } from "../../../services/classes";
 
@@ -47,6 +48,14 @@ interface ClassCardProps {
   onJoin: (id: string) => void;
 }
 
+interface Announcement {
+  id: number;
+  title: string;
+  content: string;
+  created_at: string;
+  target_role: string;
+}
+
 const COLORS = {
   primary: "#0B409C",
   lightGray: "#E0E0E0",
@@ -66,6 +75,7 @@ export default function KelasScreen() {
   const router = useRouter();
   const [joinedClasses, setJoinedClasses] = useState<ClassItem[]>([]);
   const [recommendedClasses, setRecommendedClasses] = useState<ClassItem[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [allClasses, setAllClasses] = useState<any[]>([]);
@@ -112,6 +122,14 @@ export default function KelasScreen() {
       // Fetch user data for header
       const userData = await fetchDashboardData();
       setUser(userData.user);
+
+      // Fetch announcements
+      try {
+        const announcementData = await fetchAnnouncements();
+        setAnnouncements(announcementData as Announcement[]);
+      } catch (err) {
+        console.log("Failed to load announcements", err);
+      }
 
       // Fetch classes
       const joined = await fetchClasses('joined');
@@ -210,6 +228,33 @@ export default function KelasScreen() {
             />
           </View>
         </LinearGradient>
+
+        {/* === ANNOUNCEMENTS === */}
+        {announcements.length > 0 && (
+          <View style={{ marginTop: 20 }}>
+            <View style={[styles.sectionHeader, { marginTop: 0 }]}>
+              <Text style={styles.sectionTitle}>Pengumuman</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10 }}
+            >
+              {announcements.map((announcement) => (
+                <View key={announcement.id} style={styles.announcementCard}>
+                  <View style={styles.announcementHeader}>
+                    <Ionicons name="notifications" size={18} color="#FFC107" />
+                    <Text style={styles.announcementDate}>
+                      {new Date(announcement.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                    </Text>
+                  </View>
+                  <Text style={styles.announcementTitle} numberOfLines={2}>{announcement.title}</Text>
+                  <Text style={styles.announcementContent} numberOfLines={3}>{announcement.content}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* === MY ACTIVITY === */}
         <View style={styles.activityCard}>
@@ -364,6 +409,46 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'contain',
     marginBottom: -5,
+  },
+
+  // --- ANNOUNCEMENT STYLES ---
+  announcementCard: {
+    width: 280,
+    backgroundColor: '#fff', // White card
+    borderRadius: 12,
+    padding: 15,
+    marginRight: 15,
+    // Shadow for iOS
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    // Elevation for Android
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F0F0F0'
+  },
+  announcementHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  announcementDate: {
+    fontSize: 11,
+    color: '#888',
+    fontWeight: '500'
+  },
+  announcementTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 4,
+  },
+  announcementContent: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
   },
 
   // --- ACTIVITY STYLES ---

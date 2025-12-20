@@ -141,6 +141,7 @@ class SystemAnnouncementListView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
+        from .serializers import SystemAnnouncementSerializer
         if request.user.role != 'admin':
              return Response({"detail": "Not authorized. Only admin can create system announcements."}, status=status.HTTP_403_FORBIDDEN)
         
