@@ -119,13 +119,23 @@ class QuizDetailSerializer(serializers.ModelSerializer):
 
 class QuizAttemptSerializer(serializers.ModelSerializer):
     answers = serializers.ListField(write_only=True)
-    student_name = serializers.CharField(source='user.username', read_only=True)
+    student_name = serializers.CharField(source='user.full_name', read_only=True)
+    student_avatar = serializers.ImageField(source='user.profile_picture', read_only=True)
     quiz_title = serializers.CharField(source='quiz.title', read_only=True)
+    attempt_number = serializers.SerializerMethodField()
 
     class Meta:
         model = QuizAttempt
-        fields = ['id', 'quiz', 'quiz_title', 'user', 'student_name', 'score', 'submitted_at', 'answers']
+        fields = ['id', 'quiz', 'quiz_title', 'user', 'student_name', 'student_avatar', 'score', 'submitted_at', 'answers', 'attempt_number']
         read_only_fields = ['score', 'submitted_at', 'user', 'quiz']
+
+    def get_attempt_number(self, obj):
+        # Hitung urutan attempt ini
+        all_attempts = QuizAttempt.objects.filter(quiz=obj.quiz, user=obj.user).order_by('submitted_at')
+        for index, attempt in enumerate(all_attempts):
+            if attempt.id == obj.id:
+                return index + 1
+        return 1
 
     def create(self, validated_data):
         answers_data = validated_data.pop('answers')

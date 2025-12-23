@@ -67,6 +67,13 @@ class QuizManageViewSet(viewsets.ModelViewSet):
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
+    @action(detail=True, methods=['get'])
+    def attempts(self, request, pk=None):
+        quiz = self.get_object()
+        attempts = QuizAttempt.objects.filter(quiz=quiz).order_by('-submitted_at')
+        serializer = QuizAttemptSerializer(attempts, many=True)
+        return Response(serializer.data)
+
 class QuizStudentViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         user = self.request.user

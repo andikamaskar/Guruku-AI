@@ -162,3 +162,15 @@ export const generateQuizFromMaterial = async (fileUri: string, fileType: string
     });
     return response.data;
 };
+
+// 11. Get Quiz Attempts (Teacher)
+export const fetchQuizAttempts = async (id: string) => {
+    const token = await getAuthHeader();
+    if (!token) throw new Error("No access token found");
+
+    const response = await api.get(`/quizzes/manage/${id}/attempts/`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+};
+

@@ -111,6 +111,17 @@ export default function TeacherQuizList() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                    style={[styles.actionBtn, styles.scoreBtn]}
+                    onPress={() => router.push({
+                        pathname: '/(tabs)/teachers/quizzes/[id]/scores',
+                        params: { id: item.id }
+                    })}
+                >
+                    <Ionicons name="list-outline" size={16} color="#fff" />
+                    <Text style={styles.actionBtnText}>Nilai</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                     style={[styles.actionBtn, styles.deleteBtn]}
                     onPress={() => handleDelete(item.id)}
                 >
@@ -246,6 +257,7 @@ const styles = StyleSheet.create({
         gap: 5
     },
     editBtn: { backgroundColor: COLORS.info }, // Blue
+    scoreBtn: { backgroundColor: COLORS.secondary }, // Yellow
     deleteBtn: { backgroundColor: COLORS.danger }, // Red
     actionBtnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' }
 });
