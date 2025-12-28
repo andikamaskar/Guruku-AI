@@ -5,11 +5,12 @@ from api.users.models import User  # pastikan sesuai path user kamu
 class ClassSerializer(serializers.ModelSerializer):
     teacher_name = serializers.ReadOnlyField(source='teacher.full_name')
     students_count = serializers.SerializerMethodField()
+    is_joined = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
 
     class Meta:
         model = Class
-        fields = ['id', 'name', 'description', 'grade', 'teacher', 'teacher_name', 'students_count', 'progress', 'invite_code', 'created_at']
+        fields = ['id', 'name', 'description', 'grade', 'teacher', 'teacher_name', 'students_count', 'progress', 'is_joined', 'invite_code', 'created_at']
         read_only_fields = ['teacher', 'invite_code', 'created_at']
 
     def get_students_count(self, obj):
@@ -39,6 +40,12 @@ class ClassSerializer(serializers.ModelSerializer):
         ).count()
         
         return int((completed_count / total_materials) * 100)
+
+    def get_is_joined(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated or request.user.role != 'student':
+            return False
+        return obj.students.filter(id=request.user.id).exists()
 
 
 class AnnouncementSerializer(serializers.ModelSerializer):

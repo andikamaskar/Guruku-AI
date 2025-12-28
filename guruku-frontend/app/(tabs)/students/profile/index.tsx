@@ -16,9 +16,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from 'expo-image-picker';
 import BottomNav from "../../../../components/BottomNav";
 import { fetchUserProfile, updateUserProfile } from "../../../../services/user";
+import { resolveImageUrl } from "../../../../services/api";
 import { useRouter, useFocusEffect } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import API_BASE_URL from "../../../../config/api";
+// import API_BASE_URL from "../../../../config/api";
+// const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const GRADES = ["7 SMP", "8 SMP", "9 SMP", "10 SMA", "11 SMA", "12 SMA"];
 
@@ -27,34 +29,35 @@ const StudentProfile: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Modal States
   const [modalVisible, setModalVisible] = useState(false);
   const [gradeModalVisible, setGradeModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Form State
+  // Form States
   const [fullName, setFullName] = useState("");
   const [nisn, setNisn] = useState("");
   const [grade, setGrade] = useState("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
-
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchUserProfile();
-      setUser(data);
-    } catch (error) {
-      console.error("Failed to load profile", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
 
   useFocusEffect(
     useCallback(() => {
       loadProfile();
     }, [])
   );
+
+  const loadProfile = async () => {
+    try {
+      const data = await fetchUserProfile();
+      setUser(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -63,12 +66,12 @@ const StudentProfile: React.FC = () => {
 
   const openEditModal = () => {
     if (user) {
-      setFullName(user.full_name || "");
+      setFullName(user.full_name);
       setNisn(user.nisn || "");
       setGrade(user.grade || "");
-      setProfileImage(user.profile_picture || null);
-      setModalVisible(true);
+      setProfileImage(user.profile_picture ? resolveImageUrl(user.profile_picture) : null);
     }
+    setModalVisible(true);
   };
 
   const pickImage = async () => {
@@ -89,44 +92,42 @@ const StudentProfile: React.FC = () => {
       setSaving(true);
       const formData = new FormData();
       formData.append("full_name", fullName);
-      if (nisn) formData.append("nisn", nisn);
-      if (grade) formData.append("grade", grade);
+      formData.append("nisn", nisn);
+      formData.append("grade", grade);
 
-      if (profileImage && profileImage !== user?.profile_picture) {
-        // @ts-ignore
-        formData.append("profile_picture", {
-          uri: profileImage,
-          name: `profile_${Date.now()}.jpg`,
-          type: "image/jpeg",
-        });
+      if (profileImage && profileImage !== resolveImageUrl(user?.profile_picture)) {
+        // If it's a local URI (newly picked) or different
+        if (!profileImage.startsWith('http')) {
+          const filename = profileImage.split('/').pop();
+          const match = /\.(\w+)$/.exec(filename || "");
+          const type = match ? `image/${match[1]}` : `image`;
+          // @ts-ignore
+          formData.append("profile_picture", { uri: profileImage, name: filename, type });
+        }
       }
 
       await updateUserProfile(formData);
-      Alert.alert("Sukses", "Profil berhasil diperbarui!");
       setModalVisible(false);
       loadProfile();
+      Alert.alert("Sukses", "Profil berhasil diperbarui");
     } catch (error) {
-      console.error("Update failed", error);
-      Alert.alert("Gagal", "Gagal memperbarui profil.");
+      console.error(error);
+      Alert.alert("Error", "Gagal memperbarui profil");
     } finally {
       setSaving(false);
     }
   };
 
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('accessToken');
-      await AsyncStorage.removeItem('userRole');
-      router.replace('/Login');
-    } catch (e) {
-      console.error(e);
-    }
-  }
+    await AsyncStorage.removeItem('accessToken');
+    await AsyncStorage.removeItem('refreshToken');
+    router.replace('/Login');
+  };
 
-  if (loading && !user) {
+  if (loading && !refreshing && !user) {
     return (
-      <View style={[styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#0B409C" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#004aad" />
       </View>
     );
   }
@@ -137,36 +138,30 @@ const StudentProfile: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* --- Header Section --- */}
         <LinearGradient
-          colors={["#005DFF", "#0B409C"]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
+          colors={['#004aad', '#042b69']}
           style={styles.headerContainer}
         >
           <View style={styles.profileInfo}>
             <TouchableOpacity onPress={openEditModal}>
-              <View style={[
-                styles.avatarContainer,
-                user?.is_verified ? { borderColor: '#4CAF50' } : { borderColor: '#FFC107' }
-              ]}>
+              <View style={styles.avatarContainer}>
                 <Image
                   source={{
                     uri: user?.profile_picture
-                      ? (user.profile_picture.startsWith('http')
-                        ? user.profile_picture
-                        : `${API_BASE_URL.replace('/api', '')}${user.profile_picture}`) + `?t=${new Date().getTime()}`
+                      ? resolveImageUrl(user.profile_picture)!
                       : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
                   }}
                   style={styles.avatarImage}
                 />
-                {!user?.profile_picture && (
-                  <View style={{ position: 'absolute', backgroundColor: 'rgba(0,0,0,0.3)', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: 'white', fontSize: 10 }}>Tap to Edit</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
+                {
+                  !user?.profile_picture && (
+                    <View style={{ position: 'absolute', backgroundColor: 'rgba(0,0,0,0.3)', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ color: 'white', fontSize: 10 }}>Tap to Edit</Text>
+                    </View>
+                  )
+                }
+              </View >
+            </TouchableOpacity >
 
             <Text style={styles.userName}>{user?.full_name || "User"}</Text>
 
@@ -182,21 +177,23 @@ const StudentProfile: React.FC = () => {
                 {user?.is_verified ? "✅ Terverifikasi" : "⚠️ Belum Terverifikasi"}
               </Text>
             </View>
-            {!user?.is_verified && (
-              <Text style={styles.verifyHint}>
-                Lengkapi NISN & Grade untuk verifikasi
-              </Text>
-            )}
+            {
+              !user?.is_verified && (
+                <Text style={styles.verifyHint}>
+                  Lengkapi NISN & Grade untuk verifikasi
+                </Text>
+              )
+            }
 
 
             <TouchableOpacity style={styles.editProfileButton} onPress={openEditModal}>
               <Text style={styles.editProfileText}>Edit Profile</Text>
             </TouchableOpacity>
-          </View>
-        </LinearGradient>
+          </View >
+        </LinearGradient >
 
         {/* --- MENU SECTION --- */}
-        <View style={styles.infoSection}>
+        < View style={styles.infoSection} >
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Email</Text>
             <Text style={styles.infoValue}>{user?.email}</Text>
@@ -209,7 +206,7 @@ const StudentProfile: React.FC = () => {
             <Text style={styles.infoLabel}>Kelas (Grade)</Text>
             <Text style={styles.infoValue}>{user?.grade || "-"}</Text>
           </View>
-        </View>
+        </View >
 
         <View style={styles.bodyContainer}>
           <TouchableOpacity
@@ -226,10 +223,10 @@ const StudentProfile: React.FC = () => {
             <Text style={styles.actionButtonText}>Log Out</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </ScrollView >
 
       {/* EDIT MODAL */}
-      <Modal
+      < Modal
         animationType="slide"
         transparent={true}
         visible={modalVisible}
@@ -290,10 +287,10 @@ const StudentProfile: React.FC = () => {
             </View>
           </View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* Grade Selection Modal */}
-      <Modal
+      < Modal
         animationType="slide"
         transparent={true}
         visible={gradeModalVisible}
@@ -328,10 +325,10 @@ const StudentProfile: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </Modal >
 
       <BottomNav activeTab="profile" role="student" />
-    </View>
+    </View >
   );
 };
 

@@ -20,8 +20,12 @@ class ClassListCreateView(APIView):
             if mode == 'all':
                 # Filter by grade if student has a profile
                 classes = Class.objects.all()
-                if hasattr(request.user, 'student_profile') and request.user.student_profile.grade:
-                    classes = classes.filter(grade=request.user.student_profile.grade)
+                try:
+                    if hasattr(request.user, 'student_profile') and request.user.student_profile.grade:
+                        classes = classes.filter(grade=request.user.student_profile.grade)
+                except Exception as e:
+                    # Fallback if profile access fails
+                    pass
                 
                 # Exclude joined classes from "all/recommended" list if needed, 
                 # or just return all and let frontend filter. 

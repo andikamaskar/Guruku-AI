@@ -1,0 +1,28 @@
+{
+    "cli": {
+        "version": ">= 3.0.0"
+    },
+    "build": {
+        "development": {
+            "developmentClient": true,
+            "distribution": "internal"
+        },
+        "preview": {
+            "distribution": "internal",
+            "android": {
+                "buildType": "apk"
+            },
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://digressive-unfacilely-dorla.ngrok-free.dev/api"
+            }
+        },
+        "production": {
+            "env": {
+                "EXPO_PUBLIC_API_URL": "https://digressive-unfacilely-dorla.ngrok-free.dev/api"
+            }
+        }
+    },
+    "submit": {
+        "production": {}
+    }
+}

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from django.db.models import Count, Q
 from api.users.models import User, StudentProfile, TeacherProfile
+from api.classes.models import Class
 from api.users.serializers import UserDashboardSerializer
 
 class AdminDashboardViewSet(viewsets.ViewSet):
@@ -21,15 +22,17 @@ class AdminDashboardViewSet(viewsets.ViewSet):
              return Response({"detail": "Not authorized."}, status=status.HTTP_403_FORBIDDEN)
 
         total_users = User.objects.count()
-        students_count = User.objects.filter(role='student').count()
-        teachers_count = User.objects.filter(role='teacher').count()
+        total_students = User.objects.filter(role='student').count()
+        total_teachers = User.objects.filter(role='teacher').count()
+        total_classes = Class.objects.count()
         # Count pending verification for both students and teachers
         pending_verification = User.objects.filter(role__in=['student', 'teacher'], is_verified=False).count()
 
         return Response({
             "total_users": total_users,
-            "students_count": students_count,
-            "teachers_count": teachers_count,
+            "total_students": total_students,
+            "total_teachers": total_teachers,
+            "total_classes": total_classes,
             "pending_verification": pending_verification
         })
 

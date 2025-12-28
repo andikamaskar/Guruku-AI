@@ -18,8 +18,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import API_BASE_URL from '../../../../../config/api';
+// import API_BASE_URL from '../../../../../config/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 import { leaveClass } from '../../../../../services/classes';
+import { resolveImageUrl } from '../../../../../services/api';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -157,7 +159,7 @@ export default function DetailClassScreen() {
   const renderStudentItem = ({ item }: { item: Student }) => (
     <View style={styles.studentCard}>
       <Image
-        source={{ uri: item.avatar || "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png" }}
+        source={{ uri: item.avatar ? resolveImageUrl(item.avatar)! : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png" }}
         style={styles.studentAvatar}
       />
       <View>

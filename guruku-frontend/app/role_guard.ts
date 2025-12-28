@@ -12,12 +12,12 @@ export function useRoleGuard() {
 
       if (!role) return; // belum login → biarkan login page handle
 
-      const isStudentPage = pathname.startsWith("/(tabs)/students");
-      const isTeacherPage = pathname.startsWith("/(tabs)/teachers");
+      const isStudentPage = pathname.startsWith("/students");
+      const isTeacherPage = pathname.startsWith("/teachers");
 
       if (role === "student") {
         if (isTeacherPage) {
-          router.replace("/(tabs)/students");
+          router.replace("/students");
         }
 
         // Verification Check
@@ -28,12 +28,12 @@ export function useRoleGuard() {
         if (!isVerified && !isProfilePage) {
           // Alert.alert("Action Required", "Please verify your account in Profile."); // Alert might loop or be annoying
           // We can't really Alert in useEffect easily without loops, better just redirect
-          router.replace("/(tabs)/students/profile");
+          router.replace("/students/profile");
         }
       }
 
       if (role === "teacher" && isStudentPage) {
-        router.replace("/(tabs)/teachers");
+        router.replace("/teachers");
       }
 
       // Admin Guard

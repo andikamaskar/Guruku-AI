@@ -25,9 +25,11 @@ import { marked } from 'marked';
 import katex from 'katex';
 import FloatingButton from '../../../../../components/FloatingButton';
 
-// Ganti dengan URL API Anda
-const API_URL = 'https://digressive-unfacilely-dorla.ngrok-free.dev/api';
-const BASE_URL = 'https://digressive-unfacilely-dorla.ngrok-free.dev';
+// import API_BASE_URL from '../../../../../config/api';
+// const API_URL = process.env.EXPO_PUBLIC_API_URL;
+// const BASE_URL = process.env.EXPO_PUBLIC_API_URL?.replace('/api', '');
+import { resolveImageUrl } from '../../../../../services/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 interface MaterialDetail {
     id: string;
@@ -60,7 +62,7 @@ export default function MaterialDetailScreen() {
         try {
             setLoading(true);
             const token = await AsyncStorage.getItem('accessToken');
-            const response = await axios.get(`${API_URL}/materials/${materialId}/`, {
+            const response = await axios.get(`${API_BASE_URL}/materials/${materialId}/`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setMaterial(response.data);
@@ -88,7 +90,7 @@ export default function MaterialDetailScreen() {
     const markAsComplete = async () => {
         try {
             const token = await AsyncStorage.getItem('accessToken');
-            await axios.post(`${API_URL}/materials/${materialId}/complete/`, {}, {
+            await axios.post(`${API_BASE_URL}/materials/${materialId}/complete/`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setMarkedAsRead(true);
@@ -98,114 +100,117 @@ export default function MaterialDetailScreen() {
         }
     };
 
+    const [isSharing, setIsSharing] = useState(false);
+
     const handleExportPDF = async () => {
-        if (!material) return;
-
-        let finalHtml = "";
-        try {
-            // 1. Pre-process: Protect Math from Markdown parser
-            // We replace $$...$$ and $...$ with placeholders
-            const mathMap = new Map();
-            let mathIndex = 0;
-
-            // Regex for Block Math $$...$$
-            let textWithPlaceholders = material.content.replace(/\$\$([\s\S]*?)\$\$/g, (match, tex) => {
-                const key = `MATH_BLOCK_${mathIndex++}`;
-                mathMap.set(key, { tex, display: true });
-                return key;
-            });
-
-            // Regex for Inline Math $...$
-            textWithPlaceholders = textWithPlaceholders.replace(/\$([^$]+?)\$/g, (match, tex) => {
-                const key = `MATH_INLINE_${mathIndex++}`;
-                mathMap.set(key, { tex, display: false });
-                return key;
-            });
-
-            // 2. Parse Markdown
-            // Import libraries dynamically or at top-level (assuming imports exist)
-            // We use 'marked' from imports
-            const markedHtml = await marked.parse(textWithPlaceholders);
-
-            // 3. Restore Math and Render with KaTeX
-            // We need to import katex at top level: import katex from 'katex';
-            // Assuming it's imported. If not, this code relies on it.
-            // const katex = require('katex'); // Fallback or use import
-
-            finalHtml = markedHtml.replace(/MATH_(BLOCK|INLINE)_\d+/g, (match) => {
-                const entry = mathMap.get(match);
-                if (!entry) return match;
-                try {
-                    return katex.renderToString(entry.tex, {
-                        displayMode: entry.display,
-                        throwOnError: false
-                    });
-                } catch (e) {
-                    console.error("KaTeX error", e);
-                    return entry.tex; // Fallback to source
-                }
-            });
-
-        } catch (error) {
-            console.error("Render error:", error);
-            finalHtml = material.content; // Worst case fallback
-        }
-
-        const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>${material.title}</title>
-          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-          <style>
-            @page {
-                margin: 20mm;
-            }
-            body { 
-                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-                margin: 0;
-                color: #333;
-                background: white;
-            }
-            /* Specific padding for screen view if needed, but print uses @page */
-            .container {
-                padding: 40px;
-            }
-            
-            h1 { color: #0B409C; border-bottom: 2px solid #EEE; padding-bottom: 10px; margin-bottom: 5px; }
-            .meta { color: #666; font-size: 12px; margin-bottom: 30px; font-style: italic; }
-            .content { line-height: 1.6; font-size: 14px; text-align: justify; }
-            p { margin-bottom: 15px; }
-            blockquote { border-left: 4px solid #0B409C; padding-left: 15px; color: #555; margin: 20px 0; background-color: #f9f9f9; padding: 10px; }
-            code { background-color: #f4f4f4; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
-            pre { background-color: #f4f4f4; padding: 15px; overflow-x: auto; border-radius: 4px; margin: 15px 0; }
-            img { max-width: 100%; height: auto; display: block; margin: 20px auto; }
-            
-            .katex { font-size: 1.1em; }
-            
-            @media print {
-                body { 
-                    /* Expo Print uses this margin if @page is supported, or we simulate it */
-                    margin: 20px; 
-                }
-            }
-          </style>
-        </head>
-        <body>
-            <div class="container">
-              <h1>${material.title}</h1>
-              <p class="meta">Dibuat pada: ${new Date(material.created_at).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              
-              <div class="content">
-                ${finalHtml}
-              </div>
-            </div>
-        </body>
-      </html>
-    `;
+        if (!material || isSharing) return;
 
         try {
+            setIsSharing(true);
+            let finalHtml = "";
+            try {
+                // 1. Pre-process: Protect Math from Markdown parser
+                // We replace $$...$$ and $...$ with placeholders
+                const mathMap = new Map();
+                let mathIndex = 0;
+
+                // Regex for Block Math $$...$$
+                let textWithPlaceholders = material.content.replace(/\$\$([\s\S]*?)\$\$/g, (match, tex) => {
+                    const key = `MATH_BLOCK_${mathIndex++}`;
+                    mathMap.set(key, { tex, display: true });
+                    return key;
+                });
+
+                // Regex for Inline Math $...$
+                textWithPlaceholders = textWithPlaceholders.replace(/\$([^$]+?)\$/g, (match, tex) => {
+                    const key = `MATH_INLINE_${mathIndex++}`;
+                    mathMap.set(key, { tex, display: false });
+                    return key;
+                });
+
+                // 2. Parse Markdown
+                // Import libraries dynamically or at top-level (assuming imports exist)
+                // We use 'marked' from imports
+                const markedHtml = await marked.parse(textWithPlaceholders);
+
+                // 3. Restore Math and Render with KaTeX
+                // We need to import katex at top level: import katex from 'katex';
+                // Assuming it's imported. If not, this code relies on it.
+                // const katex = require('katex'); // Fallback or use import
+
+                finalHtml = markedHtml.replace(/MATH_(BLOCK|INLINE)_\d+/g, (match) => {
+                    const entry = mathMap.get(match);
+                    if (!entry) return match;
+                    try {
+                        return katex.renderToString(entry.tex, {
+                            displayMode: entry.display,
+                            throwOnError: false
+                        });
+                    } catch (e) {
+                        console.error("KaTeX error", e);
+                        return entry.tex; // Fallback to source
+                    }
+                });
+
+            } catch (error) {
+                console.error("Render error:", error);
+                finalHtml = material.content; // Worst case fallback
+            }
+
+            const htmlContent = `
+       <!DOCTYPE html>
+       <html>
+         <head>
+           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+           <title>${material.title}</title>
+           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+           <style>
+             @page {
+                 margin: 20mm;
+             }
+             body { 
+                 font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+                 margin: 0;
+                 color: #333;
+                 background: white;
+             }
+             /* Specific padding for screen view if needed, but print uses @page */
+             .container {
+                 padding: 40px;
+             }
+             
+             h1 { color: #0B409C; border-bottom: 2px solid #EEE; padding-bottom: 10px; margin-bottom: 5px; }
+             .meta { color: #666; font-size: 12px; margin-bottom: 30px; font-style: italic; }
+             .content { line-height: 1.6; font-size: 14px; text-align: justify; }
+             p { margin-bottom: 15px; }
+             blockquote { border-left: 4px solid #0B409C; padding-left: 15px; color: #555; margin: 20px 0; background-color: #f9f9f9; padding: 10px; }
+             code { background-color: #f4f4f4; padding: 2px 5px; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+             pre { background-color: #f4f4f4; padding: 15px; overflow-x: auto; border-radius: 4px; margin: 15px 0; }
+             img { max-width: 100%; height: auto; display: block; margin: 20px auto; }
+             
+             .katex { font-size: 1.1em; }
+             
+             @media print {
+                 body { 
+                     /* Expo Print uses this margin if @page is supported, or we simulate it */
+                     margin: 20px; 
+                 }
+             }
+           </style>
+         </head>
+         <body>
+             <div class="container">
+               <h1>${material.title}</h1>
+               <p class="meta">Dibuat pada: ${new Date(material.created_at).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+               
+               <div class="content">
+                 ${finalHtml}
+               </div>
+             </div>
+         </body>
+       </html>
+     `;
+
             const { uri } = await Print.printToFileAsync({
                 html: htmlContent,
                 base64: false,
@@ -220,12 +225,13 @@ export default function MaterialDetailScreen() {
         } catch (error) {
             console.error("Error exporting PDF:", error);
             Alert.alert("Error", "Gagal mengexport PDF.");
+        } finally {
+            setIsSharing(false);
         }
     };
 
     const getVideoUri = (path: string) => {
-        if (path.startsWith('http')) return path;
-        return `${BASE_URL}${path}`;
+        return resolveImageUrl(path) || "";
     };
 
     return (
@@ -242,8 +248,8 @@ export default function MaterialDetailScreen() {
                 <Text style={styles.headerTitle} numberOfLines={1}>
                     {titleParam || "Materi"}
                 </Text>
-                <TouchableOpacity onPress={handleExportPDF} style={styles.pdfButton}>
-                    <Ionicons name="document-text-outline" size={24} color="white" />
+                <TouchableOpacity disabled={isSharing} onPress={handleExportPDF} style={styles.pdfButton}>
+                    {isSharing ? <ActivityIndicator size="small" color="white" /> : <Ionicons name="document-text-outline" size={24} color="white" />}
                 </TouchableOpacity>
             </View>
 

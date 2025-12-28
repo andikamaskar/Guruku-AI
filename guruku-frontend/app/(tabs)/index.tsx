@@ -12,9 +12,9 @@ export default function TabsIndexRedirect() {
       try {
         const role = await AsyncStorage.getItem("role");
         if (role === "student") {
-          router.replace("/(tabs)/students");
+          router.replace("/students");
         } else if (role === "teacher") {
-          router.replace("/(tabs)/teachers");
+          router.replace("/teachers");
         } else {
           router.replace("/Login");
         }

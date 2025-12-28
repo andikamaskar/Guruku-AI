@@ -4,7 +4,8 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { fetchQuizAttempts } from '@/services/quizzes';
-import API_BASE_URL from '@/config/api';
+// import API_BASE_URL from '@/config/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const COLORS = {
     primary: "#0B409C",

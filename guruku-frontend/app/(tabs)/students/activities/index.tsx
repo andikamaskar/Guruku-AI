@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchClasses } from '../../../../services/classes';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import API_BASE_URL from '../../../../config/api';
+// import API_BASE_URL from '../../../../config/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const COLORS = {
     primary: "#0B409C",

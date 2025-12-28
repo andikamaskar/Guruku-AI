@@ -2,7 +2,8 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, Alert, Plat
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import API_BASE_URL from "@/config/api";
+// import API_BASE_URL from "@/config/api";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 import axios from 'axios';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -19,7 +20,7 @@ export default function App() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [role, setRole] = useState("student");
-  
+
   // PERBAIKAN 1: Menambahkan state untuk mengontrol visibilitas dropdown
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'black',
     justifyContent: 'space-between',
   },
-  
+
   passwordInput: {
     fontSize: 16,
     paddingVertical: 6,

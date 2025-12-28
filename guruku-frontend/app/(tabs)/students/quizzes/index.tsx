@@ -23,7 +23,8 @@ import BottomNav from "../../../../components/BottomNav"; // Sesuaikan path jika
 import { fetchDashboardData } from "../../../../services/dashboard";
 import { fetchClasses } from "../../../../services/classes";
 import { fetchStudentQuizzes, Quiz } from "../../../../services/quizzes"; // Import Quiz Service
-import API_BASE_URL from "../../../../config/api";
+// import API_BASE_URL from "../../../../config/api";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const COLORS = {
   primary: "#0B409C",

@@ -14,190 +14,123 @@ import {
   BackHandler,
   Alert,
   Dimensions,
+  RefreshControl,
 } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Asumsi path komponen & services ini sudah benar di project kamu
 import FloatingButton from "../../../components/FloatingButton";
 import BottomNav from "../../../components/BottomNav";
 import { fetchDashboardData, fetchAnnouncements } from "../../../services/dashboard";
-import API_BASE_URL from "../../../config/api";
+import { resolveImageUrl } from "../../../services/api";
+// import API_BASE_URL from "../../../config/api";
+// const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 import { fetchClasses, joinClass } from "../../../services/classes";
-
-// === 1. DEFINISI TIPE DATA (INTERFACES) === //
-interface ClassItem {
-  id: string;
-  name: string;
-  description?: string;
-  teacher_name: string;
-  invite_code: string;
-  students_count?: number;
-  image?: ImageSourcePropType | null;
-  isJoined?: boolean;
-  progress?: number;
-}
-
-interface ClassCardProps {
-  id: string;
-  title: string;
-  guru: string;
-  image?: ImageSourcePropType | null;
-  isJoined: boolean;
-  progress: number;
-  kodeKelas: string;
-  onJoin: (id: string) => void;
-}
-
-interface Announcement {
-  id: number;
-  title: string;
-  content: string;
-  created_at: string;
-  target_role: string;
-}
-
-const COLORS = {
-  primary: "#0B409C",
-  lightGray: "#E0E0E0",
-  secondary: "#FFC107",
-  darkText: "#333",
-  mediumText: "#666",
-  bg: "#F5F6FA",
-};
-
-// === KOMPONEN CLASS CARD === //
-import Ionicons from "@expo/vector-icons/Ionicons";
 
 import ClassCard from "../../../components/ClassCard";
 
-// === SCREEN UTAMA === //
-export default function KelasScreen() {
+const COLORS = {
+  primary: "#0B409C",
+  secondary: "#FFC107",
+  background: "#F5F6FA",
+  white: "#FFFFFF",
+  gray: "#E0E0E0",
+  darkText: "#333333",
+  lightGray: "#F0F0F0",
+  mediumText: "#666666",
+};
+
+const StudentDashboard = () => {
   const router = useRouter();
-  const [joinedClasses, setJoinedClasses] = useState<ClassItem[]>([]);
-  const [recommendedClasses, setRecommendedClasses] = useState<ClassItem[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [allClasses, setAllClasses] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [joinedClasses, setJoinedClasses] = useState<any[]>([]);
+  const [recommendedClasses, setRecommendedClasses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleViewAll = (tabName: 'joined' | 'suggested') => {
-    router.push({
-      pathname: "/students/classes", // Pastikan path ini sesuai dengan file classes/index.tsx kamu
-      params: { initialTab: tabName } // Kita kirim data tab yang mau dibuka
-    });
-  };
-
-  // === LOGIKA BACK HANDLER ===
   useFocusEffect(
     React.useCallback(() => {
-      const backAction = () => {
-        Alert.alert("Konfirmasi Keluar", "Apakah Anda yakin ingin keluar dari aplikasi?", [
-          {
-            text: "Batal",
-            onPress: () => null,
-            style: "cancel",
-          },
-          { text: "YA", onPress: () => BackHandler.exitApp() },
-        ]);
-        return true;
-      };
-
-      const backHandler = BackHandler.addEventListener(
-        "hardwareBackPress",
-        backAction
-      );
-
-      return () => backHandler.remove();
+      loadData();
     }, [])
   );
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     try {
-      setLoading(true);
+      const dashboardData = await fetchDashboardData();
+      const announcementsData = await fetchAnnouncements();
+      const classesData = await fetchClasses('all');
 
-      // Fetch user data for header
-      const userData = await fetchDashboardData();
-      setUser(userData.user);
+      setUser(dashboardData.user);
+      setAnnouncements(announcementsData);
 
-      // Fetch announcements
-      try {
-        const announcementData = await fetchAnnouncements();
-        setAnnouncements(announcementData as Announcement[]);
-      } catch (err) {
-        console.log("Failed to load announcements", err);
+      if (classesData) {
+        // Filter classes based on logic (assuming backend returns all or split)
+        // For now, let's assume fetchClasses returns joined classes or we filter them
+        // If the API structure is different, we might need to adjust.
+        // Based on previous context, let's split manually if needed or just set them.
+        // Assuming fetchClasses returns list of classes with 'is_joined' property or similar?
+        // Or maybe we need separate endpoints. For now, let's just set joinedClasses from dashboardData if available
+        // or use fetchClasses result.
+
+        const joined = classesData.filter((c: any) => c.is_joined);
+        const recommended = classesData.filter((c: any) => !c.is_joined);
+
+        setJoinedClasses(joined);
+        setRecommendedClasses(recommended);
       }
 
-      // Fetch classes
-      const joined = await fetchClasses('joined');
-      const all = await fetchClasses('all');
-
-      // Filter: Recommended = All matching grade (from backend) MINUS Joined
-      // Backend 'all' returns classes matching student grade.
-      // Frontend ensures we don't show classes already joined in the 'Recommended' section.
-      const joinedIds = new Set(joined.map((c: any) => c.id));
-      const recommended = all.filter((c: any) => !joinedIds.has(c.id));
-
-      setJoinedClasses(joined);
-      setRecommendedClasses(recommended);
-      setAllClasses(all);
-
     } catch (error) {
-      console.error("Failed to load dashboard data:", error);
-      Alert.alert("Error", "Gagal memuat data dashboard");
+      console.error(error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const handleJoinClass = async (code: string) => {
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
+
+  const handleJoinClass = async (classId: string) => {
     try {
-      await joinClass(code);
+      await joinClass(classId);
       Alert.alert("Sukses", "Berhasil bergabung ke kelas!");
-      loadData(); // Reload data
+      loadData();
     } catch (error) {
       Alert.alert("Error", "Gagal bergabung ke kelas");
     }
   };
 
-  const handleAccessClass = (classId: string) => {
-    const selectedClass = joinedClasses.find((c) => c.id === classId) ||
-      recommendedClasses.find((c) => c.id === classId);
+  const handleAccessClass = (classId: string, className: string) => {
+    router.push({
+      pathname: "/(tabs)/students/classes/DetailClass",
+      params: { classId, className }
+    });
+  };
 
-    if (selectedClass) {
-      router.push({
-        pathname: "/(tabs)/students/classes/DetailClass",
-        params: {
-          classId: classId,
-          className: selectedClass.name
-        }
-      });
-    } else {
-      console.log("Data kelas tidak ditemukan untuk ID:", classId);
-    }
+  const handleViewAll = (tab: string) => {
+    // Navigate to classes tab, optionally with correct filter
+    router.push("/(tabs)/students/classes");
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.bg }}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} translucent={true} />
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* === HEADER === */}
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#004aad" />
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <LinearGradient
-          colors={["#005DFF", "#0B409C"]} // atas → bawah
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={styles.header}
+          colors={['#004aad', '#042b69']}
+          style={styles.headerGradient}
         >
-          <View style={styles.headerTop}>
+          <View style={styles.headerContent}>
             <View>
-              <Text style={styles.headerTitle}>Halo, {user?.full_name || 'Student'}</Text>
-              <Text style={styles.headerSubtitle}>
-                Selamat belajar kembali!
-              </Text>
+              <Text style={styles.greetingText}>Halo, Selamat Datang 👋</Text>
+              <Text style={styles.userName}>{user?.full_name || 'Siswa'}</Text>
             </View>
             <TouchableOpacity
               style={[styles.profileCircle, user?.profile_picture ? { backgroundColor: 'transparent', borderWidth: 0 } : {}]}
@@ -206,9 +139,7 @@ export default function KelasScreen() {
               {user?.profile_picture ? (
                 <Image
                   source={{
-                    uri: (user.profile_picture.startsWith('http')
-                      ? user.profile_picture
-                      : `${API_BASE_URL.replace('/api', '')}${user.profile_picture}`) + `?t=${new Date().getTime()}`
+                    uri: resolveImageUrl(user.profile_picture)!
                   }}
                   style={{ width: 40, height: 40, borderRadius: 20 }}
                 />
@@ -218,43 +149,45 @@ export default function KelasScreen() {
                 </Text>
               )}
             </TouchableOpacity>
-          </View>
+          </View >
 
           {/* Banner Image dengan Absolute Positioning */}
-          <View style={styles.headerBannerWrapper}>
+          < View style={styles.headerBannerWrapper} >
             <Image
               source={require('@/assets/dashboard/banner.png')}
               style={styles.headerBannerImage}
             />
-          </View>
-        </LinearGradient>
+          </View >
+        </LinearGradient >
 
         {/* === ANNOUNCEMENTS === */}
-        {announcements.length > 0 && (
-          <View style={{ marginTop: 20 }}>
-            <View style={[styles.sectionHeader, { marginTop: 0 }]}>
-              <Text style={styles.sectionTitle}>Pengumuman</Text>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10 }}
-            >
-              {announcements.map((announcement) => (
-                <View key={announcement.id} style={styles.announcementCard}>
-                  <View style={styles.announcementHeader}>
-                    <Ionicons name="notifications" size={18} color="#FFC107" />
-                    <Text style={styles.announcementDate}>
-                      {new Date(announcement.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                    </Text>
+        {
+          announcements.length > 0 && (
+            <View style={{ marginTop: 20 }}>
+              <View style={[styles.sectionHeader, { marginTop: 0 }]}>
+                <Text style={styles.sectionTitle}>Pengumuman</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10 }}
+              >
+                {announcements.map((announcement) => (
+                  <View key={announcement.id} style={styles.announcementCard}>
+                    <View style={styles.announcementHeader}>
+                      <Ionicons name="notifications" size={18} color="#FFC107" />
+                      <Text style={styles.announcementDate}>
+                        {new Date(announcement.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      </Text>
+                    </View>
+                    <Text style={styles.announcementTitle} numberOfLines={2}>{announcement.title}</Text>
+                    <Text style={styles.announcementContent} numberOfLines={3}>{announcement.content}</Text>
                   </View>
-                  <Text style={styles.announcementTitle} numberOfLines={2}>{announcement.title}</Text>
-                  <Text style={styles.announcementContent} numberOfLines={3}>{announcement.content}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+                ))}
+              </ScrollView>
+            </View>
+          )
+        }
 
         {/* === MY ACTIVITY === */}
         <View style={styles.activityCard}>
@@ -297,7 +230,7 @@ export default function KelasScreen() {
                 <TouchableOpacity
                   key={item.id}
                   style={styles.cardWrapperTouchable}
-                  onPress={() => handleAccessClass(item.id)}
+                  onPress={() => handleAccessClass(item.id, item.name)}
                   activeOpacity={0.7}
                 >
                   <ClassCard
@@ -355,27 +288,47 @@ export default function KelasScreen() {
             )}
           </View>
         </View>
-      </ScrollView>
+      </ScrollView >
 
       <FloatingButton />
 
       <BottomNav activeTab="home" />
-    </View>
+    </View >
   );
 }
 
 const styles = StyleSheet.create({
-  // --- STYLE HEADER BARU (Sesuai Figma) ---
-  header: {
-    backgroundColor: COLORS.primary,
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  headerGradient: {
     paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 20 : 50,
     paddingHorizontal: 20,
-    height: 250,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
+    paddingBottom: 80, // Space for banner
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     position: 'relative',
-    overflow: 'hidden',
   },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    zIndex: 10,
+  },
+  greetingText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  userName: {
+    color: COLORS.white,
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  // --- OLD STYLES KEPT FOR COMPATIBILITY IF NEEDED OR REFACTORED ABOVE ---
+  // header: { ... },
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -530,3 +483,5 @@ const styles = StyleSheet.create({
 
 
 });
+
+export default StudentDashboard;

@@ -29,10 +29,10 @@ export default function App() {
 
       // Arahkan berdasar role
       if (role === "student") {
-        router.replace("/(tabs)/students");
+        router.replace("/students");
       }
       else if (role === "teacher") {
-        router.replace("/(tabs)/teachers");
+        router.replace("/teachers");
       }
       else if (role === "admin") {
         router.replace("/admin/dashboard");

@@ -7,7 +7,8 @@ import BottomNav from '../../../components/BottomNav';
 import AnnouncementCard from '../../../components/AnnouncementCard';
 import { fetchUserProfile } from '../../../services/user';
 import { fetchTeacherDashboardData, fetchAnnouncements } from '../../../services/dashboard';
-import API_BASE_URL from '../../../config/api';
+// import API_BASE_URL from '../../../config/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const COLORS = {
   primary: "#0B409C",

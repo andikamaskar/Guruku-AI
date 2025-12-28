@@ -21,7 +21,8 @@ import * as Sharing from 'expo-sharing';
 import { getMaterials, Material } from '../../../../../services/materials';
 import axios from 'axios';
 import { getAuthHeader } from '../../../../../services/api';
-import API_BASE_URL from '../../../../../config/api';
+// import API_BASE_URL from '../../../../../config/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function TeacherMaterialDetailScreen() {
     const router = useRouter();
@@ -58,8 +59,10 @@ export default function TeacherMaterialDetailScreen() {
         }
     };
 
+    const [isSharing, setIsSharing] = useState(false);
+
     const handleExportPDF = async () => {
-        if (!material) return;
+        if (!material || isSharing) return;
 
         const htmlContent = `
       <html>
@@ -82,11 +85,14 @@ export default function TeacherMaterialDetailScreen() {
     `;
 
         try {
+            setIsSharing(true);
             const { uri } = await Print.printToFileAsync({ html: htmlContent });
             await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
         } catch (error) {
             console.error("Error exporting PDF:", error);
             Alert.alert("Error", "Gagal mengexport PDF.");
+        } finally {
+            setIsSharing(false);
         }
     };
 
@@ -109,8 +115,8 @@ export default function TeacherMaterialDetailScreen() {
                 <Text style={styles.headerTitle} numberOfLines={1}>
                     Detail Materi
                 </Text>
-                <TouchableOpacity onPress={handleExportPDF} style={styles.pdfButton}>
-                    <Ionicons name="document-text-outline" size={24} color="white" />
+                <TouchableOpacity disabled={isSharing} onPress={handleExportPDF} style={styles.pdfButton}>
+                    {isSharing ? <ActivityIndicator size="small" color="white" /> : <Ionicons name="document-text-outline" size={24} color="white" />}
                 </TouchableOpacity>
             </View>
 

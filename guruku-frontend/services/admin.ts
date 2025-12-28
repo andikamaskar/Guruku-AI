@@ -25,3 +25,9 @@ export const verifyUser = async (userId: number) => {
     const response = await api.post(`/admin/${userId}/verify_user`);
     return response.data;
 };
+
+export const createAnnouncement = async (data: { title: string; content: string; target_role: string }) => {
+    await getAuthHeader();
+    const response = await api.post('/announcements', data);
+    return response.data;
+};
