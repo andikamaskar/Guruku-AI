@@ -4,7 +4,7 @@ from rest_framework import status, permissions
 
 from .models import Conversation, ChatMessage
 from .serializers import ConversationSerializer, ChatMessageSerializer
-from .gemini_service import ask_gemini
+from .gemini_service import ask_gemini, build_user_context
 from .permissions import IsChatbotUser
 
 
@@ -59,7 +59,11 @@ class ChatbotMessageView(APIView):
             history.append({"role": role, "parts": [msg.content]})
 
         # Panggil Gemini API dengan history
-        bot_answer = ask_gemini(message, history)
+        bot_answer = ask_gemini(
+            message,
+            history,
+            user_context=build_user_context(request.user),
+        )
 
         # Simpan jawaban bot
         bot_msg = ChatMessage.objects.create(

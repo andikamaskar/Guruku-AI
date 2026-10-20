@@ -85,10 +85,56 @@ def generate_material_content(file_path, mime_type):
     except Exception as e:
         return f"Error generating content: {str(e)}"
 
-def ask_gemini(prompt: str, history: list = None) -> str:
+def build_user_context(user) -> str:
+    """Build adaptive educational context without exposing unnecessary user data."""
+    role = getattr(user, "role", None)
+
+    if role == "student":
+        grade = getattr(getattr(user, "student_profile", None), "grade", None)
+        grade = str(grade).strip() if grade else None
+
+        if grade in {"7", "8", "9"}:
+            education_level = "SMP"
+        elif grade in {"10", "11", "12"}:
+            education_level = "SMA"
+        else:
+            education_level = "SMP atau SMA (tingkat belum diketahui)"
+
+        grade_text = grade or "belum diketahui"
+        return (
+            "Konteks pengguna:\n"
+            "- Peran: siswa\n"
+            f"- Jenjang pendidikan: {education_level}\n"
+            f"- Kelas: {grade_text}\n"
+            "- Semua mata pelajaran SMP dan SMA diperbolehkan; "
+            "jangan mengasumsikan mata pelajaran tertentu."
+        )
+
+    if role == "teacher":
+        subject = getattr(getattr(user, "teacher_profile", None), "subject", None)
+        subject = str(subject).strip() if subject else None
+        subject_text = subject or "belum diketahui"
+        return (
+            "Konteks pengguna:\n"
+            "- Peran: guru\n"
+            f"- Mata pelajaran yang diampu: {subject_text}\n"
+            "- Guru tetap dapat bertanya tentang semua mata pelajaran SMP dan SMA."
+        )
+
+    return "Konteks pengguna: tidak tersedia. Gunakan tingkat penjelasan umum SMP/SMA."
+
+
+def ask_gemini(prompt: str, history: list = None, user_context: str = None) -> str:
     try:
         chat = model.start_chat(history=history or [])
-        response = chat.send_message(prompt)
+        contextual_prompt = prompt
+        if user_context:
+            contextual_prompt = (
+                f"{user_context}\n\n"
+                "Gunakan konteks ini hanya untuk menyesuaikan tingkat dan gaya "
+                f"penjelasan.\n\nPertanyaan pengguna:\n{prompt}"
+            )
+        response = chat.send_message(contextual_prompt)
         return response.text
     except Exception as e:
         return f"Error: {str(e)}"
