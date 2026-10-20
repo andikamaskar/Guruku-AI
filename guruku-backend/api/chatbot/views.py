@@ -4,8 +4,23 @@ from rest_framework import status, permissions
 
 from .models import Conversation, ChatMessage
 from .serializers import ConversationSerializer, ChatMessageSerializer
-from .gemini_service import ask_gemini, build_user_context
+from .gemini_service import (
+    ask_gemini,
+    build_user_context,
+    classify_question_scope,
+)
 from .permissions import IsChatbotUser
+
+OUT_OF_SCOPE_MESSAGE = (
+    "Maaf, saya hanya dapat membantu topik pendidikan SMP/SMA, "
+    "belajar, motivasi, manajemen waktu, dan persiapan ujian."
+)
+UNSAFE_MESSAGE = (
+    "Maaf, saya tidak dapat membantu permintaan yang berbahaya, ilegal, "
+    "atau melanggar etika."
+)
+
+ALLOWED_SCOPE_CATEGORIES = {"educational", "study_support", "ambiguous"}
 
 
 class ConversationListCreateView(APIView):
@@ -43,6 +58,12 @@ class ChatbotMessageView(APIView):
             convo = Conversation.objects.get(id=conversation_id, user=request.user)
         except Conversation.DoesNotExist:
             return Response({"error": "Conversation not found"}, status=404)
+
+        scope_category = classify_question_scope(message)
+        if scope_category == "unsafe":
+            return Response({"error": UNSAFE_MESSAGE}, status=status.HTTP_400_BAD_REQUEST)
+        if scope_category == "out_of_scope":
+            return Response({"error": OUT_OF_SCOPE_MESSAGE}, status=status.HTTP_400_BAD_REQUEST)
 
         # Simpan pesan user
         user_msg = ChatMessage.objects.create(

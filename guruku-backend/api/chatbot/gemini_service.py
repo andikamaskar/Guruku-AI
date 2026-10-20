@@ -1,11 +1,13 @@
+import json
+
 import google.generativeai as genai
 from django.conf import settings
 
 # Konfigurasi API
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
-# SYSTEM PROMPT → AI akan selalu bertindak sebagai guru privat
-TEACHER_INSTRUCTION = """
+# Instruction khusus chatbot tutor.
+CHATBOT_INSTRUCTION = """
 Anda adalah "Guruku AI", asisten guru pribadi yang didedikasikan khusus untuk membimbing siswa jenjang SMP dan SMA.
 
 **Identitas & Gaya Komunikasi:**
@@ -44,11 +46,62 @@ Anda adalah "Guruku AI", asisten guru pribadi yang didedikasikan khusus untuk me
 Ingat: Kamu adalah teman belajar mereka. Buat suasana belajar jadi asik dan tidak membosankan!
 """
 
-# Inisialisasi model dengan instruction tetap
-model = genai.GenerativeModel(
+SCOPE_CLASSIFIER_INSTRUCTION = """
+Anda adalah classifier untuk chatbot pendidikan Guruku AI.
+Klasifikasikan pertanyaan pengguna ke tepat satu kategori berikut:
+- educational: materi semua mata pelajaran SMP/SMA atau pertanyaan umum yang berkaitan dengan pendidikan.
+- study_support: motivasi belajar, manajemen waktu, strategi belajar, atau persiapan ujian.
+- out_of_scope: tidak berkaitan dengan pendidikan atau pengembangan diri pelajar.
+- unsafe: berbahaya, ilegal, atau melanggar etika.
+- ambiguous: belum cukup jelas, tetapi masih mungkin berkaitan dengan pendidikan.
+
+Kembalikan JSON saja dengan format:
+{"category":"educational|study_support|out_of_scope|unsafe|ambiguous"}
+"""
+
+CONTENT_GENERATOR_INSTRUCTION = """
+Anda adalah penyusun modul pembelajaran untuk siswa SMP dan SMA.
+
+Buat materi pembelajaran yang terstruktur, akurat, dan mudah dipahami berdasarkan
+isi dokumen yang diberikan. Hasilkan Markdown yang berisi ringkasan, konsep utama,
+rumus LaTeX jika relevan, contoh, dan tiga latihan.
+
+Gunakan hanya informasi yang didukung dokumen. Hasilkan isi modul secara langsung,
+bukan respons percakapan kepada siswa.
+"""
+
+
+# Model dipisahkan agar aturan chatbot tidak memengaruhi generator materi.
+chatbot_model = genai.GenerativeModel(
     model_name="gemini-3.5-flash-lite",
-    system_instruction=TEACHER_INSTRUCTION
+    system_instruction=CHATBOT_INSTRUCTION,
 )
+
+content_model = genai.GenerativeModel(
+    model_name="gemini-3.5-flash-lite",
+    system_instruction=CONTENT_GENERATOR_INSTRUCTION,
+)
+
+scope_classifier_model = genai.GenerativeModel(
+    model_name="gemini-3.5-flash-lite",
+    generation_config={"response_mime_type": "application/json"},
+    system_instruction=SCOPE_CLASSIFIER_INSTRUCTION,
+)
+
+
+def classify_question_scope(prompt: str) -> str:
+    """Return a validated scope category; fail closed to ambiguous."""
+    try:
+        response = scope_classifier_model.generate_content(prompt)
+        result = json.loads(response.text)
+        category = result.get("category")
+        allowed_categories = {
+            "educational", "study_support", "out_of_scope", "unsafe", "ambiguous"
+        }
+        return category if category in allowed_categories else "ambiguous"
+    except (AttributeError, TypeError, ValueError, json.JSONDecodeError):
+        return "ambiguous"
+
 
 def upload_to_gemini(path, mime_type=None):
     """Uploads the given file to Gemini."""
@@ -76,7 +129,7 @@ def generate_material_content(file_path, mime_type):
         Format the output as clean Markdown.
         """
         
-        chat = model.start_chat(history=[
+        chat = content_model.start_chat(history=[
             {"role": "user", "parts": [uploaded_file, prompt]}
         ])
         
@@ -126,7 +179,7 @@ def build_user_context(user) -> str:
 
 def ask_gemini(prompt: str, history: list = None, user_context: str = None) -> str:
     try:
-        chat = model.start_chat(history=history or [])
+        chat = chatbot_model.start_chat(history=history or [])
         contextual_prompt = prompt
         if user_context:
             contextual_prompt = (

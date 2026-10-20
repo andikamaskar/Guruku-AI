@@ -1,8 +1,20 @@
-from django.test import SimpleTestCase
-from rest_framework.test import APIRequestFactory
+from django.test import SimpleTestCase, TestCase
+from rest_framework.test import APIRequestFactory, APITestCase
+from rest_framework import status
+
+from api.users.models import User
+
 
 from .permissions import IsChatbotUser
-from .gemini_service import build_user_context
+from unittest.mock import Mock, patch
+
+from .gemini_service import (
+    CHATBOT_INSTRUCTION,
+    CONTENT_GENERATOR_INSTRUCTION,
+    build_user_context,
+    classify_question_scope,
+)
+from .views import OUT_OF_SCOPE_MESSAGE, UNSAFE_MESSAGE
 
 
 class IsChatbotUserTests(SimpleTestCase):
@@ -43,6 +55,29 @@ class IsChatbotUserTests(SimpleTestCase):
         self.assertFalse(self.permission.has_permission(request, None))
 
 
+class InstructionSeparationTests(SimpleTestCase):
+    def test_chatbot_and_content_instructions_are_distinct(self):
+        self.assertIsNot(CHATBOT_INSTRUCTION, CONTENT_GENERATOR_INSTRUCTION)
+        self.assertIn("Socratic", CHATBOT_INSTRUCTION)
+        self.assertNotIn("Socratic", CONTENT_GENERATOR_INSTRUCTION)
+
+
+class QuestionScopeTests(SimpleTestCase):
+    @patch("api.chatbot.gemini_service.scope_classifier_model")
+    def test_classifier_returns_valid_category(self, classifier_model):
+        classifier_model.generate_content.return_value = Mock(
+            text='{"category": "educational"}'
+        )
+
+        self.assertEqual(classify_question_scope("Jelaskan fotosintesis"), "educational")
+
+    @patch("api.chatbot.gemini_service.scope_classifier_model")
+    def test_classifier_falls_back_to_ambiguous_for_invalid_response(self, classifier_model):
+        classifier_model.generate_content.return_value = Mock(text='{"category": "unknown"}')
+
+        self.assertEqual(classify_question_scope("Pertanyaan"), "ambiguous")
+
+
 class BuildUserContextTests(SimpleTestCase):
     def make_user(self, role, profile_name=None, **profile_values):
         profile = type("Profile", (), profile_values)() if profile_name else None
@@ -77,4 +112,105 @@ class BuildUserContextTests(SimpleTestCase):
 
         context = build_user_context(user)
         self.assertIn("tingkat belum diketahui", context)
+
+
+class ChatbotEndpointTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="student@example.com",
+            password="TestPassword123!",
+            full_name="Test Student",
+            role="student",
+        )
+        self.other_user = User.objects.create_user(
+            email="other@example.com",
+            password="TestPassword123!",
+            full_name="Other Student",
+            role="student",
+        )
+        self.url = "/api/chatbot/conversations/"
+        self.client.force_authenticate(user=self.user)
+
+    def create_conversation(self, user=None):
+        from .models import Conversation
+
+        return Conversation.objects.create(user=user or self.user, title="Test")
+
+    @patch("api.chatbot.views.ask_gemini")
+    @patch("api.chatbot.views.classify_question_scope", return_value="educational")
+    def test_allowed_question_is_saved_and_sent_to_tutor(self, classify, ask):
+        ask.return_value = "Mari kita mulai dari konsep dasarnya."
+        conversation = self.create_conversation()
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Jelaskan fotosintesis"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        classify.assert_called_once_with("Jelaskan fotosintesis")
+        ask.assert_called_once()
+        self.assertEqual(conversation.messages.filter(role="user").count(), 1)
+        self.assertEqual(conversation.messages.filter(role="bot").count(), 1)
+
+    @patch("api.chatbot.views.ask_gemini")
+    @patch("api.chatbot.views.classify_question_scope", return_value="out_of_scope")
+    def test_out_of_scope_question_is_rejected_before_tutor(self, classify, ask):
+        conversation = self.create_conversation()
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Ceritakan gosip artis terbaru"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["error"], OUT_OF_SCOPE_MESSAGE)
+        ask.assert_not_called()
+        self.assertEqual(conversation.messages.count(), 0)
+
+    @patch("api.chatbot.views.ask_gemini")
+    @patch("api.chatbot.views.classify_question_scope", return_value="unsafe")
+    def test_unsafe_question_is_rejected_before_tutor(self, classify, ask):
+        conversation = self.create_conversation()
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Permintaan berbahaya"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["error"], UNSAFE_MESSAGE)
+        ask.assert_not_called()
+        self.assertEqual(conversation.messages.count(), 0)
+
+    def test_user_cannot_send_message_to_another_users_conversation(self):
+        conversation = self.create_conversation(user=self.other_user)
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Jelaskan energi"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(conversation.messages.count(), 0)
+
+    @patch("api.chatbot.views.classify_question_scope", return_value="ambiguous")
+    @patch("api.chatbot.views.ask_gemini", return_value="Tolong jelaskan maksud pertanyaanmu.")
+    def test_ambiguous_question_is_forwarded_for_clarification(self, ask, classify):
+        conversation = self.create_conversation()
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Bantu saya"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ask.assert_called_once()
+        self.assertEqual(conversation.messages.filter(role="user").count(), 1)
+        self.assertEqual(conversation.messages.filter(role="bot").count(), 1)
 
