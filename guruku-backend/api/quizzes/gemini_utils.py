@@ -40,7 +40,7 @@ def generate_quiz_from_file(file_path: str, mime_type: str, num_questions: int =
         }
         
         model = genai.GenerativeModel(
-            model_name="gemini-2.5-flash-lite",
+            model_name="gemini-3.5-flash-lite",
             generation_config=generation_config
         )
 

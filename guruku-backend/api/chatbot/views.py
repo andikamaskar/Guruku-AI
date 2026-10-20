@@ -5,10 +5,11 @@ from rest_framework import status, permissions
 from .models import Conversation, ChatMessage
 from .serializers import ConversationSerializer, ChatMessageSerializer
 from .gemini_service import ask_gemini
+from .permissions import IsChatbotUser
 
 
 class ConversationListCreateView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsChatbotUser]
 
     def get(self, request):
         conversations = Conversation.objects.filter(user=request.user).order_by("-created_at")
@@ -31,7 +32,7 @@ class ConversationListCreateView(APIView):
 
 
 class ChatbotMessageView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsChatbotUser]
 
     def post(self, request, conversation_id):
         message = request.data.get("message")
@@ -74,7 +75,7 @@ class ChatbotMessageView(APIView):
 
 
 class ConversationDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsChatbotUser]
 
     def get(self, request, conversation_id):
         try:

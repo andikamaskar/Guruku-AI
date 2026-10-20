@@ -46,7 +46,7 @@ Ingat: Kamu adalah teman belajar mereka. Buat suasana belajar jadi asik dan tida
 
 # Inisialisasi model dengan instruction tetap
 model = genai.GenerativeModel(
-    model_name="gemini-2.5-flash-lite",
+    model_name="gemini-3.5-flash-lite",
     system_instruction=TEACHER_INSTRUCTION
 )
 
