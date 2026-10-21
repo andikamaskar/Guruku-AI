@@ -183,3 +183,29 @@ CHATBOT_RATE_LIMIT_WINDOW = env.int('CHATBOT_RATE_LIMIT_WINDOW', default=300)
 CHATBOT_HISTORY_LIMIT = env.int('CHATBOT_HISTORY_LIMIT', default=20)
 CHATBOT_MAX_CONTEXT_MESSAGES = env.int('CHATBOT_MAX_CONTEXT_MESSAGES', default=40)
 GEMINI_REQUEST_TIMEOUT = env.float('GEMINI_REQUEST_TIMEOUT', default=30.0)
+
+# Upload validation limits and allowed file types
+MATERIAL_MAX_FILE_SIZE = env.int('MATERIAL_MAX_FILE_SIZE', default=10 * 1024 * 1024)
+MATERIAL_MAX_VIDEO_SIZE = env.int('MATERIAL_MAX_VIDEO_SIZE', default=50 * 1024 * 1024)
+MATERIAL_GENERATOR_MAX_FILE_SIZE = env.int(
+    'MATERIAL_GENERATOR_MAX_FILE_SIZE', default=10 * 1024 * 1024
+)
+MATERIAL_ALLOWED_EXTENSIONS = env.list(
+    'MATERIAL_ALLOWED_EXTENSIONS', default=['pdf', 'doc', 'docx', 'txt']
+)
+MATERIAL_ALLOWED_MIME_TYPES = env.list(
+    'MATERIAL_ALLOWED_MIME_TYPES',
+    default=[
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+    ],
+)
+MATERIAL_ALLOWED_VIDEO_EXTENSIONS = env.list(
+    'MATERIAL_ALLOWED_VIDEO_EXTENSIONS', default=['mp4', 'mov', 'avi', 'mkv']
+)
+MATERIAL_ALLOWED_VIDEO_MIME_TYPES = env.list(
+    'MATERIAL_ALLOWED_VIDEO_MIME_TYPES',
+    default=['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'],
+)

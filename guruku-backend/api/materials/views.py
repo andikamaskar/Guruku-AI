@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, serializers
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -8,7 +8,13 @@ from .serializers import MaterialSerializer
 from api.classes.models import Class
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.conf import settings
 from django.shortcuts import get_object_or_404
+from .serializers import validate_upload
+import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 from api.chatbot.gemini_service import generate_material_content
 import mimetypes
 import os
@@ -116,31 +122,57 @@ class GenerateMaterialContentView(APIView):
             return Response({'error': 'No file uploaded'}, status=status.HTTP_400_BAD_REQUEST)
         
         file_obj = request.FILES['file']
-        
-        # Save temporary file
         try:
-            # We can save it temporarily or just pass the file object if gemini_service supports it.
-            # But genai.upload_file usually needs a path.
-            # Let's save it to a temp location.
-            import os
-            from django.core.files.storage import default_storage
-            from django.core.files.base import ContentFile
-            
-            path = default_storage.save(f"temp/{file_obj.name}", ContentFile(file_obj.read()))
-            full_path = default_storage.path(path)
-            
-            import mimetypes
-            mime_type, _ = mimetypes.guess_type(full_path)
-            
-            generated_content = generate_material_content(full_path, mime_type)
-            
-            # Clean up temp file
-            default_storage.delete(path)
-            
-            if "Error" in generated_content and len(generated_content) < 100:
-                 return Response({'error': generated_content}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            validate_upload(
+                file_obj,
+                max_size=settings.MATERIAL_GENERATOR_MAX_FILE_SIZE,
+                allowed_extensions=settings.MATERIAL_ALLOWED_EXTENSIONS,
+                allowed_mime_types=settings.MATERIAL_ALLOWED_MIME_TYPES,
+                field_name="file",
+            )
+        except serializers.ValidationError as exc:
+            return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({'content': generated_content}, status=status.HTTP_200_OK)
-            
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        path = None
+        try:
+            extension = os.path.splitext(file_obj.name or "")[1].lower()
+            safe_name = f"{uuid.uuid4().hex}{extension}"
+            path = default_storage.save(
+                f"temp/{safe_name}", ContentFile(file_obj.read())
+            )
+            full_path = default_storage.path(path)
+
+            mime_type, _ = mimetypes.guess_type(full_path)
+            generated_content = generate_material_content(full_path, mime_type)
+
+            if "Error" in generated_content and len(generated_content) < 100:
+                logger.error("Material generator returned an error response")
+                return Response(
+                    {
+                        "error": (
+                            "Materi belum dapat dibuat karena layanan AI sedang "
+                            "mengalami gangguan."
+                        )
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            return Response({"content": generated_content}, status=status.HTTP_200_OK)
+
+        except Exception:
+            logger.exception("Material generator request failed")
+            return Response(
+                {
+                    "error": (
+                        "Materi belum dapat dibuat karena layanan AI sedang "
+                        "mengalami gangguan."
+                    )
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        finally:
+            if path:
+                try:
+                    default_storage.delete(path)
+                except Exception:
+                    logger.exception("Failed to delete temporary material file")
