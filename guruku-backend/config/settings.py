@@ -27,12 +27,13 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-x+!)ae1lhob@25_y(3lto7ariy@3*4-v(w=i^^%a=erbtj=o#@'
+# Loaded from .env; fail fast if it is not configured.
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DEBUG', default=False)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 
 # Application definition
@@ -174,3 +175,11 @@ SIMPLE_JWT = {
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# AI request protection and context limits
+CHATBOT_MAX_MESSAGE_LENGTH = env.int('CHATBOT_MAX_MESSAGE_LENGTH', default=4000)
+CHATBOT_RATE_LIMIT_COUNT = env.int('CHATBOT_RATE_LIMIT_COUNT', default=20)
+CHATBOT_RATE_LIMIT_WINDOW = env.int('CHATBOT_RATE_LIMIT_WINDOW', default=300)
+CHATBOT_HISTORY_LIMIT = env.int('CHATBOT_HISTORY_LIMIT', default=20)
+CHATBOT_MAX_CONTEXT_MESSAGES = env.int('CHATBOT_MAX_CONTEXT_MESSAGES', default=40)
+GEMINI_REQUEST_TIMEOUT = env.float('GEMINI_REQUEST_TIMEOUT', default=30.0)

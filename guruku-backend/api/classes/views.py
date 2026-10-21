@@ -130,6 +130,14 @@ class ClassAnnouncementListCreateView(APIView):
 
     def get(self, request, pk):
         class_obj = get_object_or_404(Class, pk=pk)
+        is_owner = class_obj.teacher_id == request.user.id
+        is_member = class_obj.students.filter(id=request.user.id).exists()
+        if not (is_owner or is_member):
+            return Response(
+                {"error": "Anda tidak memiliki akses ke pengumuman kelas ini."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         announcements = class_obj.announcements.all()
         serializer = AnnouncementSerializer(announcements, many=True)
         return Response(serializer.data)

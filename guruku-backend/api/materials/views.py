@@ -1,25 +1,49 @@
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from .models import Material, MaterialProgress
-from .serializers import MaterialSerializer, MaterialProgressSerializer
+from .serializers import MaterialSerializer
 from api.classes.models import Class
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.shortcuts import get_object_or_404
 from api.chatbot.gemini_service import generate_material_content
 import mimetypes
+import os
+
+
+def can_access_class(user, class_obj):
+    return (
+        user.role == "teacher" and class_obj.teacher_id == user.id
+    ) or (
+        user.role == "student" and class_obj.students.filter(id=user.id).exists()
+    )
+
+
+def can_manage_class(user, class_obj):
+    return user.role == "teacher" and class_obj.teacher_id == user.id
+
+
+def can_access_material(user, material):
+    return can_access_class(user, material.class_obj)
 
 class MaterialListCreateView(generics.ListCreateAPIView):
     serializer_class = MaterialSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        class_id = self.kwargs['class_id']
-        return Material.objects.filter(class_obj__id=class_id).order_by('created_at')
+        class_obj = get_object_or_404(Class, id=self.kwargs['class_id'])
+        if not can_access_class(self.request.user, class_obj):
+            raise PermissionDenied("Anda tidak memiliki akses ke materi kelas ini.")
+        return Material.objects.filter(class_obj=class_obj).order_by('created_at')
 
     def perform_create(self, serializer):
-        class_id = self.kwargs['class_id']
-        class_obj = get_object_or_404(Class, id=class_id)
-        
+        class_obj = get_object_or_404(Class, id=self.kwargs['class_id'])
+        if not can_manage_class(self.request.user, class_obj):
+            raise PermissionDenied("Hanya guru pemilik kelas yang dapat membuat materi.")
+
         # Save first to get the file path
         instance = serializer.save(class_obj=class_obj)
         
@@ -37,15 +61,39 @@ class MaterialListCreateView(generics.ListCreateAPIView):
                 pass
 
 class MaterialDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Material.objects.all()
     serializer_class = MaterialSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        material = get_object_or_404(Material, id=self.kwargs['pk'])
+        if not can_access_material(self.request.user, material):
+            raise PermissionDenied("Anda tidak memiliki akses ke materi ini.")
+        if self.request.method in {"PATCH", "PUT", "DELETE"} and not can_manage_class(
+            self.request.user, material.class_obj
+        ):
+            raise PermissionDenied("Hanya guru pemilik kelas yang dapat mengubah materi.")
+        return material
+
+    def get_queryset(self):
+        return Material.objects.all() # Object access is enforced in get_object().
+
+    def perform_update(self, serializer):
+        serializer.save(class_obj=self.get_object().class_obj) 
+
+    def perform_destroy(self, instance):
+        instance.delete() 
 
 class MarkMaterialCompleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, material_id):
+        if request.user.role != "student":
+            raise PermissionDenied("Hanya siswa yang dapat menandai materi selesai.")
+
         material = get_object_or_404(Material, id=material_id)
+        if not can_access_material(request.user, material):
+            raise PermissionDenied("Anda tidak memiliki akses ke materi ini.")
+
         progress, created = MaterialProgress.objects.get_or_create(
             student=request.user,
             material=material
@@ -54,10 +102,13 @@ class MarkMaterialCompleteView(APIView):
         progress.save()
         return Response({'status': 'marked as complete'}, status=status.HTTP_200_OK)
 
-from rest_framework.parsers import MultiPartParser, FormParser
-
 class GenerateMaterialContentView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
+    def check_permissions(self, request):
+        super().check_permissions(request)
+        if request.user.role != "teacher":
+            raise PermissionDenied("Hanya guru yang dapat menggunakan generator materi.")
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request):

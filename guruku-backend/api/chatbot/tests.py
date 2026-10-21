@@ -1,6 +1,10 @@
+from django.conf import settings
+from django.core.cache import cache
 from django.test import SimpleTestCase, TestCase
 from rest_framework.test import APIRequestFactory, APITestCase
 from rest_framework import status
+
+from .views import _build_history
 
 from api.users.models import User
 
@@ -9,7 +13,9 @@ from .permissions import IsChatbotUser
 from unittest.mock import Mock, patch
 
 from .gemini_service import (
+    CHATBOT_ERROR_MESSAGE,
     CHATBOT_INSTRUCTION,
+    CONTENT_GENERATION_ERROR_MESSAGE,
     CONTENT_GENERATOR_INSTRUCTION,
     build_user_context,
     classify_question_scope,
@@ -78,6 +84,36 @@ class QuestionScopeTests(SimpleTestCase):
         self.assertEqual(classify_question_scope("Pertanyaan"), "ambiguous")
 
 
+class GeminiErrorHandlingTests(SimpleTestCase):
+    @patch("api.chatbot.gemini_service.scope_classifier_model")
+    def test_classifier_error_falls_back_to_ambiguous_without_exposing_error(self, classifier_model):
+        classifier_model.generate_content.side_effect = RuntimeError("secret provider detail")
+
+        self.assertEqual(classify_question_scope("Pertanyaan"), "ambiguous")
+
+    @patch("api.chatbot.gemini_service.chatbot_model")
+    def test_chatbot_error_returns_safe_message(self, chatbot_model):
+        chatbot_model.start_chat.side_effect = RuntimeError("secret provider detail")
+
+        from .gemini_service import ask_gemini
+
+        result = ask_gemini("Jelaskan energi")
+
+        self.assertEqual(result, CHATBOT_ERROR_MESSAGE)
+        self.assertNotIn("secret provider detail", result)
+
+    @patch("api.chatbot.gemini_service.content_model")
+    def test_content_generation_error_returns_safe_message(self, content_model):
+        content_model.start_chat.side_effect = RuntimeError("secret provider detail")
+
+        from .gemini_service import generate_material_content
+
+        result = generate_material_content("C:/missing.pdf", "application/pdf")
+
+        self.assertEqual(result, CONTENT_GENERATION_ERROR_MESSAGE)
+        self.assertNotIn("secret provider detail", result)
+
+
 class BuildUserContextTests(SimpleTestCase):
     def make_user(self, role, profile_name=None, **profile_values):
         profile = type("Profile", (), profile_values)() if profile_name else None
@@ -116,6 +152,7 @@ class BuildUserContextTests(SimpleTestCase):
 
 class ChatbotEndpointTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(
             email="student@example.com",
             password="TestPassword123!",
@@ -213,4 +250,101 @@ class ChatbotEndpointTests(APITestCase):
         ask.assert_called_once()
         self.assertEqual(conversation.messages.filter(role="user").count(), 1)
         self.assertEqual(conversation.messages.filter(role="bot").count(), 1)
+
+    def test_blank_message_is_rejected_before_rate_limit_or_ai(self):
+        conversation = self.create_conversation()
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "   "},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["error"], "Message is required")
+
+    def test_oversized_message_is_rejected(self):
+        conversation = self.create_conversation()
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "x" * (settings.CHATBOT_MAX_MESSAGE_LENGTH + 1)},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("cannot exceed", response.data["error"])
+
+    @patch("api.chatbot.views.ask_gemini", return_value="Jawaban")
+    @patch("api.chatbot.views.classify_question_scope", return_value="educational")
+    def test_rate_limit_returns_429_after_configured_count(self, classify, ask):
+        conversation = self.create_conversation()
+        for index in range(settings.CHATBOT_RATE_LIMIT_COUNT):
+            response = self.client.post(
+                f"{self.url}{conversation.id}/message/",
+                {"message": f"Pertanyaan {index}"},
+                format="json",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Pertanyaan berikutnya"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(ask.call_count, settings.CHATBOT_RATE_LIMIT_COUNT)
+
+    @patch("api.chatbot.views.ask_gemini", return_value="Jawaban")
+    @patch("api.chatbot.views.classify_question_scope", return_value="educational")
+    def test_history_uses_recent_messages_and_selected_old_messages(self, classify, ask):
+        conversation = self.create_conversation()
+        from .models import ChatMessage
+
+        old_message = ChatMessage.objects.create(
+            conversation=conversation, role="user", content="Pembahasan lama"
+        )
+        for index in range(settings.CHATBOT_HISTORY_LIMIT + 2):
+            ChatMessage.objects.create(
+                conversation=conversation, role="user", content=f"Recent {index}"
+            )
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {
+                "message": "Lanjutkan",
+                "context_message_ids": [old_message.id, old_message.id],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        history = ask.call_args.args[1]
+        contents = [part["parts"][0] for part in history]
+        self.assertIn("Pembahasan lama", contents)
+        self.assertEqual(len(contents), len(set(contents)))
+        self.assertLessEqual(len(history), settings.CHATBOT_MAX_CONTEXT_MESSAGES)
+
+    @patch("api.chatbot.views.ask_gemini", return_value="Jawaban")
+    @patch("api.chatbot.views.classify_question_scope", return_value="educational")
+    def test_selected_message_from_other_conversation_is_ignored(self, classify, ask):
+        conversation = self.create_conversation()
+        other_conversation = self.create_conversation(user=self.other_user)
+        from .models import ChatMessage
+
+        foreign_message = ChatMessage.objects.create(
+            conversation=other_conversation, role="user", content="Rahasia conversation lain"
+        )
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Jelaskan energi", "context_message_ids": [foreign_message.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        history = ask.call_args.args[1]
+        contents = [part["parts"][0] for part in history]
+        self.assertNotIn("Rahasia conversation lain", contents)
 

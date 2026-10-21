@@ -1,7 +1,13 @@
 import json
+import logging
 
 import google.generativeai as genai
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+CHATBOT_ERROR_MESSAGE = "Maaf, tutor AI sedang mengalami gangguan. Silakan coba lagi nanti."
+CONTENT_GENERATION_ERROR_MESSAGE = "Materi belum dapat dibuat karena layanan AI sedang mengalami gangguan."
 
 # Konfigurasi API
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -92,14 +98,18 @@ scope_classifier_model = genai.GenerativeModel(
 def classify_question_scope(prompt: str) -> str:
     """Return a validated scope category; fail closed to ambiguous."""
     try:
-        response = scope_classifier_model.generate_content(prompt)
+        response = scope_classifier_model.generate_content(
+            prompt,
+            request_options={"timeout": settings.GEMINI_REQUEST_TIMEOUT},
+        )
         result = json.loads(response.text)
         category = result.get("category")
         allowed_categories = {
             "educational", "study_support", "out_of_scope", "unsafe", "ambiguous"
         }
         return category if category in allowed_categories else "ambiguous"
-    except (AttributeError, TypeError, ValueError, json.JSONDecodeError):
+    except Exception:
+        logger.exception("Gemini scope classifier failed")
         return "ambiguous"
 
 
@@ -133,10 +143,14 @@ def generate_material_content(file_path, mime_type):
             {"role": "user", "parts": [uploaded_file, prompt]}
         ])
         
-        response = chat.send_message("Generate the content now.")
+        response = chat.send_message(
+            "Generate the content now.",
+            request_options={"timeout": settings.GEMINI_REQUEST_TIMEOUT},
+        )
         return response.text
-    except Exception as e:
-        return f"Error generating content: {str(e)}"
+    except Exception:
+        logger.exception("Gemini material generation failed")
+        return CONTENT_GENERATION_ERROR_MESSAGE
 
 def build_user_context(user) -> str:
     """Build adaptive educational context without exposing unnecessary user data."""
@@ -187,7 +201,11 @@ def ask_gemini(prompt: str, history: list = None, user_context: str = None) -> s
                 "Gunakan konteks ini hanya untuk menyesuaikan tingkat dan gaya "
                 f"penjelasan.\n\nPertanyaan pengguna:\n{prompt}"
             )
-        response = chat.send_message(contextual_prompt)
+        response = chat.send_message(
+            contextual_prompt,
+            request_options={"timeout": settings.GEMINI_REQUEST_TIMEOUT},
+        )
         return response.text
-    except Exception as e:
-        return f"Error: {str(e)}"
+    except Exception:
+        logger.exception("Gemini chatbot request failed")
+        return CHATBOT_ERROR_MESSAGE
