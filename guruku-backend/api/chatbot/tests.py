@@ -10,6 +10,9 @@ from api.users.models import User
 
 
 from .permissions import IsChatbotUser
+import json
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from .gemini_service import (
@@ -19,6 +22,8 @@ from .gemini_service import (
     CONTENT_GENERATOR_INSTRUCTION,
     build_user_context,
     classify_question_scope,
+    extract_document_text,
+    generate_material_content,
 )
 from .views import OUT_OF_SCOPE_MESSAGE, UNSAFE_MESSAGE
 
@@ -392,4 +397,41 @@ class ChatbotEndpointTests(APITestCase):
         self.assertEqual(conversation.messages.filter(role="bot").count(), 1)
         classify.assert_called_once_with("Bantu saya memahami aljabar")
         ask.assert_called_once()
+
+
+class MaterialTextGenerationTests(SimpleTestCase):
+    def test_extracts_txt_without_provider_upload(self):
+        with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", encoding="utf-8", delete=False) as document:
+            document.write("Materi fotosintesis")
+            path = document.name
+        try:
+            self.assertEqual(extract_document_text(path, "text/plain"), "Materi fotosintesis")
+        finally:
+            Path(path).unlink(missing_ok=True)
+
+    @patch("api.chatbot.gemini_service.genai.upload_file")
+    @patch("api.chatbot.gemini_service.content_model")
+    def test_generator_sends_text_and_not_file_upload(self, content_model, upload_file):
+        with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", encoding="utf-8", delete=False) as document:
+            document.write("Materi fotosintesis")
+            path = document.name
+        try:
+            content_model.generate_content.return_value.text = "# Fotosintesis"
+            result = generate_material_content(path, "text/plain")
+            self.assertEqual(result, "# Fotosintesis")
+            upload_file.assert_not_called()
+            self.assertIn("Materi fotosintesis", content_model.generate_content.call_args.args[0])
+        finally:
+            Path(path).unlink(missing_ok=True)
+
+    @patch("api.chatbot.gemini_service.content_model")
+    def test_generator_provider_failure_returns_safe_message(self, content_model):
+        with tempfile.NamedTemporaryFile(suffix=".txt", mode="w", encoding="utf-8", delete=False) as document:
+            document.write("Materi matematika")
+            path = document.name
+        try:
+            content_model.generate_content.side_effect = RuntimeError("provider secret detail")
+            self.assertEqual(generate_material_content(path, "text/plain"), CONTENT_GENERATION_ERROR_MESSAGE)
+        finally:
+            Path(path).unlink(missing_ok=True)
 

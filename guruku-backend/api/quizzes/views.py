@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import Quiz, QuizAttempt 
 from .serializers import QuizAdminSerializer, QuizDetailSerializer, QuizAttemptSerializer
-from .gemini_utils import generate_quiz_from_file
+from .gemini_utils import QuizGenerationError, generate_quiz_from_file
 from rest_framework.parsers import MultiPartParser, FormParser
 import tempfile
 import os
@@ -60,8 +60,16 @@ class QuizManageViewSet(viewsets.ModelViewSet):
             
             return Response(questions, status=status.HTTP_200_OK)
             
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except QuizGenerationError:
+            return Response(
+                {"error": "Kuis belum dapat dibuat karena layanan AI sedang mengalami gangguan."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except Exception:
+            return Response(
+                {"error": "Kuis belum dapat dibuat karena terjadi kesalahan internal."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         finally:
             # Clean up temp file
             if os.path.exists(tmp_path):

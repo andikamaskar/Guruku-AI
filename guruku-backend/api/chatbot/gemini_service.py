@@ -1,8 +1,13 @@
 import json
 import logging
+import os
+import re
+import zipfile
+import xml.etree.ElementTree as ET
 
 import google.generativeai as genai
 from django.conf import settings
+from pypdf import PdfReader
 
 logger = logging.getLogger(__name__)
 
@@ -118,38 +123,59 @@ def upload_to_gemini(path, mime_type=None):
     file = genai.upload_file(path, mime_type=mime_type)
     return file
 
-def generate_material_content(file_path, mime_type):
-    """Generates educational content from a file using Gemini."""
+def extract_document_text(file_path, mime_type=None):
+    """Extract readable document text locally for Gemini content generation."""
+    extension = os.path.splitext(file_path)[1].lower()
     try:
-        # Upload file
-        uploaded_file = upload_to_gemini(file_path, mime_type=mime_type)
-        
-        # Create prompt
-        prompt = """
-        Analyze this educational document.
-        Create a comprehensive lesson module in Markdown format based strictly on the content of this file.
-        
-        Requirements:
-        1. **Summary**: Brief summary of the topic.
-        2. **Key Concepts**: Explain main concepts clearly.
-        3. **Equations**: If there are mathematical formulas, convert them to LaTeX format enclosed in $$ (block) or $ (inline).
-        4. **Examples**: Provide examples if available in the text.
-        5. **Quiz/Practice**: Create 3 simple practice questions based on the content.
-        
-        Format the output as clean Markdown.
-        """
-        
-        chat = content_model.start_chat(history=[
-            {"role": "user", "parts": [uploaded_file, prompt]}
-        ])
-        
-        response = chat.send_message(
-            "Generate the content now.",
+        if extension == ".pdf" or mime_type == "application/pdf":
+            text = "\n".join(page.extract_text() or "" for page in PdfReader(file_path).pages)
+        elif extension == ".txt" or mime_type == "text/plain":
+            with open(file_path, "r", encoding="utf-8") as document:
+                text = document.read()
+        elif extension == ".docx" or mime_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            with zipfile.ZipFile(file_path) as archive:
+                xml_content = archive.read("word/document.xml")
+            root = ET.fromstring(xml_content)
+            text = " ".join(node.text or "" for node in root.iter() if node.tag.endswith("}t"))
+        else:
+            raise ValueError("Unsupported document format")
+    except Exception as exc:
+        logger.error("Material document extraction failed: %s", type(exc).__name__)
+        raise ValueError("Document cannot be read") from exc
+
+    text = re.sub(r"\s+", " ", text).strip()
+    if not text:
+        raise ValueError("Document has no readable text")
+    return text
+
+
+def generate_material_content(file_path, mime_type):
+    """Generates educational content from locally extracted document text."""
+    try:
+        document_text = extract_document_text(file_path, mime_type)
+        prompt = f"""
+Analyze this educational document.
+Create a comprehensive lesson module in Markdown format based strictly on the content below.
+
+Requirements:
+1. Summary: Brief summary of the topic.
+2. Key Concepts: Explain main concepts clearly.
+3. Equations: Convert mathematical formulas to LaTeX where relevant.
+4. Examples: Provide examples if available in the text.
+5. Quiz/Practice: Create 3 simple practice questions based on the content.
+
+Format the output as clean Markdown.
+
+DOCUMENT TEXT:
+{document_text}
+"""
+        response = content_model.generate_content(
+            prompt,
             request_options={"timeout": settings.GEMINI_REQUEST_TIMEOUT},
         )
         return response.text
-    except Exception:
-        logger.exception("Gemini material generation failed")
+    except Exception as exc:
+        logger.error("Gemini material generation failed: %s", type(exc).__name__)
         return CONTENT_GENERATION_ERROR_MESSAGE
 
 def build_user_context(user) -> str:
