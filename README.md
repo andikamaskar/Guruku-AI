@@ -33,7 +33,7 @@ graph TD
         Views["Modular ViewSets & API Views"]
         
         subgraph Services ["Backend Services"]
-            GeminiService["Gemini AI Service\n(gemini-2.5-flash-lite)"]
+            GeminiService["Gemini AI Service\n(gemini-3.5-flash-lite)"]
             MediaHandler["Media & Document Parser\n(mimetypes & TempFiles)"]
         end
     end

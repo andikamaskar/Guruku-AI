@@ -45,7 +45,11 @@ const AdminDashboard = () => {
 
     const handleVerifyUser = async (userId: string, status: 'verified' | 'rejected') => {
         try {
-            await verifyUser(userId, status);
+            if (status === 'rejected') {
+                Alert.alert("Belum tersedia", "Fitur penolakan user belum didukung oleh backend.");
+                return;
+            }
+            await verifyUser(Number(userId));
             Alert.alert("Sukses", `User berhasil ${status === 'verified' ? 'diverifikasi' : 'ditolak'}`);
             setSelectedUser(null);
             loadData();

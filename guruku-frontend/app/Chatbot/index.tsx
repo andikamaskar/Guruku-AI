@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import {
   View,
   Text,
@@ -20,8 +20,8 @@ import {
 import Ionicons from "@expo/vector-icons/Ionicons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Markdown from 'react-native-markdown-display';
-import { getConversations, createConversation, sendMessage, getConversationDetail, ChatMessage } from "../../services/chatbot";
-import { fetchDashboardData } from "../../services/dashboard";
+import { getConversations, createConversation, sendMessage, getConversationDetail, getChatbotErrorMessage, ChatMessage } from "../../services/chatbot";
+
 import MathRenderer from "../../components/MathRenderer";
 
 export default function ChatBotScreen() {
@@ -30,6 +30,15 @@ export default function ChatBotScreen() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    AsyncStorage.getItem("role").then((role) => {
+      if (role !== "student" && role !== "teacher") {
+        router.replace("/Login");
+      }
+    });
+  }, [router]);
 
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const navigation = useNavigation();
@@ -61,7 +70,7 @@ export default function ChatBotScreen() {
       }
     } catch (error) {
       console.error("Error init chat:", error);
-      Alert.alert("Error", "Gagal memuat percakapan.");
+      Alert.alert("Gagal memuat percakapan", getChatbotErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -76,9 +85,13 @@ export default function ChatBotScreen() {
   }, [messages]);
 
   const handleSend = async () => {
-    if (inputText.trim().length === 0 || !conversationId) return;
+    if (sending || inputText.trim().length === 0 || !conversationId) return;
 
-    const textToSend = inputText;
+    const textToSend = inputText.trim();
+    if (textToSend.length > 4000) {
+      Alert.alert("Pesan terlalu panjang", "Pesan maksimal 4000 karakter.");
+      return;
+    }
     setInputText(""); // Clear input immediately
     setSending(true);
 
@@ -103,7 +116,7 @@ export default function ChatBotScreen() {
       });
     } catch (error) {
       console.error("Error sending message:", error);
-      Alert.alert("Gagal", "Pesan tidak terkirim.");
+      Alert.alert("Pesan tidak terkirim", getChatbotErrorMessage(error));
       // Remove temp message on failure
       setMessages((prev) => prev.filter(m => m.id !== tempId));
       setInputText(textToSend); // Restore text
@@ -240,7 +253,7 @@ export default function ChatBotScreen() {
               placeholderTextColor="#999"
               style={styles.input}
               multiline
-              maxLength={500}
+              maxLength={4000}
             />
           </View>
           <TouchableOpacity

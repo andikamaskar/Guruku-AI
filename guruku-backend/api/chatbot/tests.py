@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.cache import cache
-from django.test import SimpleTestCase, TestCase
+from django.test import SimpleTestCase, TestCase, override_settings
 from rest_framework.test import APIRequestFactory, APITestCase
 from rest_framework import status
 
@@ -150,6 +150,14 @@ class BuildUserContextTests(SimpleTestCase):
         self.assertIn("tingkat belum diketahui", context)
 
 
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "chatbot-test-cache",
+        }
+    }
+)
 class ChatbotEndpointTests(APITestCase):
     def setUp(self):
         cache.clear()
@@ -347,4 +355,41 @@ class ChatbotEndpointTests(APITestCase):
         history = ask.call_args.args[1]
         contents = [part["parts"][0] for part in history]
         self.assertNotIn("Rahasia conversation lain", contents)
+
+    @patch("api.chatbot.views.ask_gemini", side_effect=RuntimeError("provider secret detail"))
+    @patch("api.chatbot.views.classify_question_scope", return_value="educational")
+    def test_provider_failure_keeps_response_safe_and_saves_messages(self, classify, ask):
+        conversation = self.create_conversation()
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Jelaskan energi"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn("provider secret detail", str(response.data))
+        self.assertEqual(response.data["bot_message"]["content"], CHATBOT_ERROR_MESSAGE)
+        self.assertEqual(conversation.messages.filter(role="user").count(), 1)
+        self.assertEqual(conversation.messages.filter(role="bot").count(), 1)
+        classify.assert_called_once_with("Jelaskan energi")
+        ask.assert_called_once()
+
+    @patch("api.chatbot.views.ask_gemini", return_value="Tolong perjelas pertanyaanmu.")
+    @patch("api.chatbot.views.classify_question_scope", side_effect=RuntimeError("classifier secret detail"))
+    def test_classifier_failure_falls_back_to_tutoring_flow(self, classify, ask):
+        conversation = self.create_conversation()
+
+        response = self.client.post(
+            f"{self.url}{conversation.id}/message/",
+            {"message": "Bantu saya memahami aljabar"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["bot_message"]["content"], "Tolong perjelas pertanyaanmu.")
+        self.assertEqual(conversation.messages.filter(role="user").count(), 1)
+        self.assertEqual(conversation.messages.filter(role="bot").count(), 1)
+        classify.assert_called_once_with("Bantu saya memahami aljabar")
+        ask.assert_called_once()
 

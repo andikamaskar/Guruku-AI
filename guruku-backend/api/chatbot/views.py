@@ -7,10 +7,14 @@ from rest_framework import status
 from .models import Conversation, ChatMessage
 from .serializers import ConversationSerializer, ChatMessageSerializer
 from .gemini_service import (
+    CHATBOT_ERROR_MESSAGE,
     ask_gemini,
     build_user_context,
     classify_question_scope,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 from .permissions import IsChatbotUser
 
 OUT_OF_SCOPE_MESSAGE = (
@@ -123,7 +127,11 @@ class ChatbotMessageView(APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        scope_category = classify_question_scope(message)
+        try:
+            scope_category = classify_question_scope(message)
+        except Exception:
+            logger.exception("Chatbot scope classification failed")
+            scope_category = "ambiguous"
         if scope_category == "unsafe":
             return Response({"error": UNSAFE_MESSAGE}, status=status.HTTP_400_BAD_REQUEST)
         if scope_category == "out_of_scope":
@@ -140,11 +148,15 @@ class ChatbotMessageView(APIView):
         history = _build_history(convo, user_msg.id, context_message_ids)
 
         # Panggil Gemini API dengan history
-        bot_answer = ask_gemini(
-            message,
-            history,
-            user_context=build_user_context(request.user),
-        )
+        try:
+            bot_answer = ask_gemini(
+                message,
+                history,
+                user_context=build_user_context(request.user),
+            )
+        except Exception:
+            logger.exception("Chatbot tutor request failed")
+            bot_answer = CHATBOT_ERROR_MESSAGE
 
         # Simpan jawaban bot
         bot_msg = ChatMessage.objects.create(

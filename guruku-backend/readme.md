@@ -14,6 +14,7 @@ Layanan backend REST API untuk platform **Guruku.AI**, dibangun dengan **Django 
 7. [Integrasi Google Gemini AI](#-integrasi-google-gemini-ai)
 8. [Dokumentasi Endpoint API](#-dokumentasi-endpoint-api)
 9. [Deployment & Produksi](#-deployment--produksi)
+10. [Dokumen Operasional](#-dokumen-operasional)
 
 ---
 
@@ -85,7 +86,7 @@ guruku-backend/
 5. **AI-Powered Quiz Generator**:
    - Memindai dokumen bank soal dan mengekstrak pertanyaan, opsi pilihan ganda, dan kunci jawaban dalam format JSON terstruktur.
 6. **Socratic AI Tutor**:
-   - Chatbot berbasis `gemini-2.5-flash-lite` dengan instruksi sistem agar mengarahkan siswa memahami konsep dengan metode tanya jawab (Sokratik) dan format rumus `$$...$$`.
+   - Chatbot berbasis `gemini-3.5-flash-lite` dengan instruksi sistem agar mengarahkan siswa memahami konsep dengan metode tanya jawab (Sokratik) dan format rumus `$$...$$`.
 7. **Penyimpanan Berkas Terisolasi**:
    - Penamaan berkas otomatis dengan UUID v4 untuk mencegah konflik nama file materi dan avatar profil.
 
@@ -94,7 +95,7 @@ guruku-backend/
 ## 💻 Prasyarat Sistem
 
 - **Python**: Versi 3.10 atau 3.11 disarankan.
-- **PostgreSQL**: Versi 13 ke atas (atau gunakan MySQL / SQLite).
+- **MySQL/MariaDB**: Server database yang kompatibel dengan engine Django MySQL.
 - **Git**
 - **Koneksi Internet**: Untuk mengakses API Google Gemini.
 
@@ -143,12 +144,12 @@ Berikut adalah konfigurasi yang diperlukan pada berkas `.env`:
 | :--- | :--- | :--- |
 | `SECRET_KEY` | Kunci rahasia pengaman Django | `django-insecure-...` |
 | `DEBUG` | Mode debug (`True` untuk dev) | `True` |
-| `DB_NAME` | Nama database PostgreSQL | `guruku_db` |
-| `DB_USER` | Username database | `postgres` |
-| `DB_PASSWORD` | Password database | `password_anda` |
+| `DB_NAME` | Nama database MySQL/MariaDB | `guruku_db` |
+| `DB_USER` | Username database | `[REDACTED]` |
+| `DB_PASSWORD` | Password database | `[REDACTED]` |
 | `DB_HOST` | Host database server | `127.0.0.1` |
-| `DB_PORT` | Port database server | `5432` |
-| `GEMINI_API_KEY` | API Key dari Google AI Studio | `AIzaSy...` |
+| `DB_PORT` | Port database server | `3306` |
+| `GEMINI_API_KEY` | API Key dari Google AI Studio | `[REDACTED]` |
 
 > [!TIP]
 > Jika Anda ingin mencoba menggunakan **SQLite** secara cepat tanpa PostgreSQL, Anda dapat mengganti konfigurasi `DATABASES` pada `config/settings.py` menjadi engine SQLite standar.
@@ -184,7 +185,7 @@ Berikut adalah konfigurasi yang diperlukan pada berkas `.env`:
 
 ## 🧠 Integrasi Google Gemini AI
 
-Backend menggunakan pustaka resmi `google-generativeai` dengan model **`gemini-2.5-flash-lite`** karena kecepatannya yang tinggi dan efisiensi token.
+Backend menggunakan pustaka resmi `google-generativeai` dengan model **`gemini-3.5-flash-lite`** karena kecepatannya yang tinggi dan efisiensi token.
 
 ### 1. AI Socratic Tutor (`api/chatbot/gemini_service.py`)
 Menerapkan instruksi sistem khusus (`TEACHER_INSTRUCTION`):
@@ -232,3 +233,11 @@ Backend ini telah disiapkan untuk kemudahan deployment ke platform seperti **Ren
    ./build.sh
    ```
    Skrip ini secara otomatis menginstal paket dependensi, menjalankan `collectstatic --no-input`, dan mengeksekusi `migrate`.
+
+---
+
+## 📄 Dokumen Operasional
+
+- [API_DOCUMENTATION.md](API_DOCUMENTATION.md) — endpoint, payload, role, dan status response.
+- [TEST_RESULTS.md](TEST_RESULTS.md) — matriks skenario pengujian dan keterbatasan test.
+- [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) — checklist environment, database, Redis, static/media, keamanan, dan operasional production.

@@ -88,7 +88,7 @@ export default function App() {
       });
 
       Alert.alert("Sukses", "Registrasi berhasil!", [
-        { text: "OK", onPress: () => router.replace("Login") }
+        { text: "OK", onPress: () => router.replace("/Login") }
       ]);
 
     } catch (error: any) {
@@ -110,7 +110,7 @@ export default function App() {
       {/* Main Header */}
       <View style={styles.MainHeader}>
         <Text style={styles.HeaderContent}>Sudah Mempunyai Akun?</Text>
-        <TouchableOpacity onPress={() => router.push("Login")} >
+        <TouchableOpacity onPress={() => router.push("/Login")} >
           <Text style={styles.TextLogButton}>Login</Text>
         </TouchableOpacity>
       </View>

@@ -26,6 +26,10 @@ export const verifyUser = async (userId: number) => {
     return response.data;
 };
 
+export const rejectUser = async (_userId: number): Promise<never> => {
+    throw new Error("Penolakan user belum didukung oleh backend.");
+};
+
 export const createAnnouncement = async (data: { title: string; content: string; target_role: string }) => {
     await getAuthHeader();
     const response = await api.post('/announcements', data);

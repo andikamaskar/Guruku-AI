@@ -367,6 +367,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
     },
     headerTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', width: 220 },
+    headerSubtitle: { color: 'white', fontSize: 13, marginTop: 4 },
     submitBadge: { backgroundColor: 'white', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20 },
     submitBadgeText: { color: COLORS.primary, fontWeight: 'bold' },
 

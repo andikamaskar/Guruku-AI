@@ -35,13 +35,14 @@ export default function TeacherLayout() {
 
         // Check if accessing restricted areas (classes, quizzes)
         // segments example: ['(tabs)', 'teachers', 'classes', 'BuatKelas']
-        const accessingProtected = segments.includes('classes') || segments.includes('quizzes');
+        const segmentNames = segments as string[];
+        const accessingProtected = segmentNames.includes('classes') || segmentNames.includes('quizzes');
 
         if (!isVerified && accessingProtected && inTeacherTabs) {
             // Redirect to dashboard if trying to access protected routes while unverified
             router.replace('/(tabs)/teachers');
         }
-    }, [isVerified, loading, segments]);
+    }, [isVerified, loading, segments, router]);
 
     if (loading) {
         return (
