@@ -43,6 +43,10 @@ export const sendMessage = async (
 
 export const getChatbotErrorMessage = (error: any): string => {
     const status = error?.response?.status;
+    const backendMessage = error?.response?.data?.error || error?.response?.data?.detail;
+    if (typeof backendMessage === "string" && backendMessage.trim()) {
+        return backendMessage;
+    }
     if (status === 400) return "Pesan atau topik pertanyaan tidak valid.";
     if (status === 403) return "Anda tidak memiliki akses ke chatbot.";
     if (status === 429) return "Batas penggunaan tercapai. Coba lagi dalam beberapa menit.";

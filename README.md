@@ -12,7 +12,7 @@
 
 ## 📌 Tentang Guruku.AI
 
-**Guruku.AI** adalah ekosistem pembelajaran pintar berbasis mobile dan cloud yang dirancang untuk menjembatani interaksi antara **Siswa**, **Guru**, dan **Administrator**. Mengintegrasikan model kecerdasan buatan mutakhir (**Google Gemini 2.5 Flash Lite**), Guruku.AI memfasilitasi pembuatan materi otomatis, ekstraksi soal kuis pintar, tutor pribadi dengan metode interaktif Sokratik (Socratic Method), serta rendering rumus matematika kompleks menggunakan format LaTeX/KaTeX.
+**Guruku.AI** adalah ekosistem pembelajaran pintar berbasis mobile dan cloud yang dirancang untuk menjembatani interaksi antara **Siswa**, **Guru**, dan **Administrator**. Mengintegrasikan model kecerdasan buatan mutakhir (**Google Gemini 3.5 Flash Lite**), Guruku.AI memfasilitasi pembuatan materi otomatis, ekstraksi soal kuis pintar, tutor pribadi dengan metode interaktif Sokratik (Socratic Method), serta rendering rumus matematika kompleks menggunakan format LaTeX/KaTeX.
 
 ---
 
