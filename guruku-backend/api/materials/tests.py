@@ -144,6 +144,39 @@ class MaterialAccessTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @override_settings(
+        MATERIAL_MAX_FILE_SIZE=100,
+        MATERIAL_ALLOWED_EXTENSIONS=["pdf"],
+        MATERIAL_ALLOWED_MIME_TYPES=["application/pdf"],
+    )
+    def test_material_upload_accepts_valid_pdf_signature(self):
+        self.client.force_authenticate(self.teacher)
+        upload = SimpleUploadedFile("lesson.pdf", b"%PDF-1.7\nvalid", content_type="application/pdf")
+        response = self.client.post(self.list_url, {"title": "PDF lesson", "file": upload}, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    @override_settings(
+        MATERIAL_MAX_FILE_SIZE=100,
+        MATERIAL_ALLOWED_EXTENSIONS=["pdf"],
+        MATERIAL_ALLOWED_MIME_TYPES=["application/pdf"],
+    )
+    def test_material_upload_rejects_fake_pdf(self):
+        self.client.force_authenticate(self.teacher)
+        upload = SimpleUploadedFile("fake.pdf", b"not a pdf", content_type="application/pdf")
+        response = self.client.post(self.list_url, {"title": "Fake PDF", "file": upload}, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @override_settings(
+        MATERIAL_GENERATOR_MAX_FILE_SIZE=100,
+        MATERIAL_ALLOWED_EXTENSIONS=["docx"],
+        MATERIAL_ALLOWED_MIME_TYPES=["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+    )
+    def test_generator_rejects_invalid_docx_structure(self):
+        self.client.force_authenticate(self.teacher)
+        upload = SimpleUploadedFile("fake.docx", b"not a docx", content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        response = self.client.post("/api/materials/generate-content/", {"file": upload}, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @override_settings(
         MATERIAL_GENERATOR_MAX_FILE_SIZE=100,
         MATERIAL_ALLOWED_EXTENSIONS=["txt"],
         MATERIAL_ALLOWED_MIME_TYPES=["text/plain"],

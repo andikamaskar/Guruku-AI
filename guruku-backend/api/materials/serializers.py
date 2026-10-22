@@ -1,9 +1,44 @@
+import io
 import os
+import zipfile
 
 from django.conf import settings
 from rest_framework import serializers
 
 from .models import Material, MaterialProgress
+
+
+def _read_file_bytes(file_obj):
+    current_position = file_obj.tell()
+    file_obj.seek(0)
+    data = file_obj.read()
+    file_obj.seek(current_position)
+    return data
+
+
+def _validate_content_signature(file_obj, extension, field_name):
+    data = _read_file_bytes(file_obj)
+    extension = extension.lower()
+
+    if extension == "pdf" and not data.startswith(b"%PDF-"):
+        raise serializers.ValidationError({field_name: "Isi file PDF tidak valid."})
+
+    if extension == "txt":
+        try:
+            data.decode("utf-8")
+        except UnicodeDecodeError:
+            raise serializers.ValidationError({field_name: "Isi file teks tidak valid."})
+
+    if extension == "docx":
+        try:
+            with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                names = set(archive.namelist())
+                if "[Content_Types].xml" not in names or "word/document.xml" not in names:
+                    raise ValueError
+                if archive.testzip() is not None:
+                    raise ValueError
+        except (OSError, ValueError, zipfile.BadZipFile):
+            raise serializers.ValidationError({field_name: "Isi file DOCX tidak valid."})
 
 
 def validate_upload(file_obj, *, max_size, allowed_extensions, allowed_mime_types, field_name):
@@ -19,6 +54,8 @@ def validate_upload(file_obj, *, max_size, allowed_extensions, allowed_mime_type
         raise serializers.ValidationError({field_name: "Ukuran file melebihi batas."})
     if file_obj.content_type not in allowed_mime_types:
         raise serializers.ValidationError({field_name: "Tipe MIME file tidak diizinkan."})
+
+    _validate_content_signature(file_obj, extension, field_name)
     return file_obj
 
 
